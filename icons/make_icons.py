@@ -18,6 +18,6 @@ def write_png(path, size, rgb):
         f.write(sig + chunk(b"IHDR", ihdr) + chunk(b"IDAT", idat) + chunk(b"IEND", b""))
 
 here = os.path.dirname(__file__)
-write_png(os.path.join(here, "icon-192.png"), 192, (124, 154, 134))
-write_png(os.path.join(here, "icon-512.png"), 512, (124, 154, 134))
+write_png(os.path.join(here, "icon-192.png"), 192, (29, 185, 84))
+write_png(os.path.join(here, "icon-512.png"), 512, (29, 185, 84))
 print("icons written")

@@ -38,12 +38,14 @@ function renderToday() {
 
   const list = document.getElementById("today-list");
   const progress = document.getElementById("today-progress");
+  const bar = document.getElementById("today-bar");
   list.innerHTML = "";
   const habits = activeHabits();
 
   if (habits.length === 0) {
     progress.textContent = "";
     progress.classList.remove("complete");
+    bar.style.width = "0%";
     list.innerHTML = '<p class="empty">Noch keine Gewohnheiten. Lege unter „Verwalten" eine an.</p>';
     return;
   }
@@ -75,6 +77,7 @@ function renderToday() {
   });
 
   const all = doneCount === habits.length;
+  bar.style.width = Math.round((doneCount / habits.length) * 100) + "%";
   progress.classList.toggle("complete", all);
   progress.textContent = all
     ? "Für heute erledigt."
