@@ -73,3 +73,30 @@ function heatmapDays(entries, todayK, numDays) {
   }
   return out;
 }
+
+function startOfWeek(key) {
+  const parts = key.split("-").map(Number);
+  const dt = new Date(parts[0], parts[1] - 1, parts[2]);
+  const dow = (dt.getDay() + 6) % 7; // Montag = 0
+  dt.setDate(dt.getDate() - dow);
+  return dateKey(dt);
+}
+
+function weeklyRates(entries, createdAt, todayK) {
+  let ws = startOfWeek(createdAt);
+  const lastWs = startOfWeek(todayK);
+  const out = [];
+  while (ws <= lastWs) {
+    let total = 0;
+    let done = 0;
+    for (let i = 0; i < 7; i++) {
+      const day = addDays(ws, i);
+      if (day < createdAt || day > todayK) { continue; }
+      total++;
+      if (entries[day]) { done++; }
+    }
+    out.push({ weekStart: ws, rate: total === 0 ? 0 : Math.round((done / total) * 100) });
+    ws = addDays(ws, 7);
+  }
+  return out;
+}

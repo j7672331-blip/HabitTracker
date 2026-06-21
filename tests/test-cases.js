@@ -44,3 +44,13 @@ assertEqual("heatmapDays returns numDays entries ending today",
   [ { date: "2026-06-19", done: false },
     { date: "2026-06-20", done: true },
     { date: "2026-06-21", done: false } ]);
+
+// --- stats: Wochenverlauf ---
+// 2026-06-15 ist ein Montag.
+assertEqual("startOfWeek returns Monday",
+  startOfWeek("2026-06-17"), "2026-06-15");
+assertEqual("startOfWeek on Monday returns same day",
+  startOfWeek("2026-06-15"), "2026-06-15");
+assertEqual("weeklyRates one partial week",
+  weeklyRates({ "2026-06-15": true, "2026-06-16": true }, "2026-06-15", "2026-06-17"),
+  [ { weekStart: "2026-06-15", rate: 67 } ]);
