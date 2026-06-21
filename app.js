@@ -67,7 +67,80 @@ document.querySelectorAll(".tab").forEach(function (t) {
 });
 
 // Platzhalter, in Task 10/11 implementiert
-function renderManage() {}
+function renderManage() {
+  const list = document.getElementById("manage-list");
+  list.innerHTML = "";
+  state.habits.forEach(function (h) {
+    const row = document.createElement("div");
+    row.className = "manage-row";
+    row.innerHTML =
+      '<span class="dot" style="background:' + h.farbe + '"></span>' +
+      '<span class="name">' + escapeHtml(h.name) + (h.archiviert ? " (archiviert)" : "") + "</span>";
+    const renameBtn = document.createElement("button");
+    renameBtn.textContent = "Umbenennen";
+    renameBtn.addEventListener("click", function () {
+      const name = prompt("Neuer Name:", h.name);
+      if (name) { updateHabit(state, h.id, name.trim(), h.farbe); saveData(state); renderManage(); }
+    });
+    const archiveBtn = document.createElement("button");
+    archiveBtn.textContent = h.archiviert ? "—" : "Archivieren";
+    archiveBtn.disabled = h.archiviert;
+    archiveBtn.addEventListener("click", function () {
+      archiveHabit(state, h.id); saveData(state); renderManage();
+    });
+    const delBtn = document.createElement("button");
+    delBtn.textContent = "Löschen";
+    delBtn.addEventListener("click", function () {
+      if (confirm('"' + h.name + '" und alle Einträge wirklich löschen?')) {
+        deleteHabit(state, h.id); saveData(state); renderManage();
+      }
+    });
+    row.appendChild(renameBtn);
+    row.appendChild(archiveBtn);
+    row.appendChild(delBtn);
+    list.appendChild(row);
+  });
+}
 function renderStats() {}
+
+document.getElementById("add-habit").addEventListener("click", function () {
+  const name = document.getElementById("new-name").value.trim();
+  const farbe = document.getElementById("new-color").value;
+  if (!name) { return; }
+  createHabit(state, name, farbe, todayKey());
+  saveData(state);
+  document.getElementById("new-name").value = "";
+  renderManage();
+});
+
+document.getElementById("export-btn").addEventListener("click", function () {
+  const blob = new Blob([exportJson(state)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "habit-tracker-backup-" + todayKey() + ".json";
+  a.click();
+  URL.revokeObjectURL(url);
+});
+
+document.getElementById("import-btn").addEventListener("click", function () {
+  document.getElementById("import-file").click();
+});
+
+document.getElementById("import-file").addEventListener("change", function (ev) {
+  const file = ev.target.files[0];
+  if (!file) { return; }
+  const reader = new FileReader();
+  reader.onload = function () {
+    try {
+      state = importJson(reader.result);
+      render();
+      alert("Backup importiert.");
+    } catch (e) {
+      alert("Datei konnte nicht gelesen werden.");
+    }
+  };
+  reader.readAsText(file);
+});
 
 showView("today");
