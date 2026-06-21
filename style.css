@@ -1,0 +1,68 @@
+:root {
+  --bg: #111827; --card: #1f2937; --text: #f3f4f6; --muted: #9ca3af;
+  --accent: #34d399; --grid-empty: #374151;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; font-family: -apple-system, system-ui, sans-serif;
+  background: var(--bg); color: var(--text);
+  padding-bottom: 4.5rem;
+}
+main { padding: 1rem 1rem 0; max-width: 600px; margin: 0 auto; }
+h1 { font-size: 1.6rem; margin: 0.5rem 0 1rem; }
+h2 { font-size: 1.1rem; margin: 1.5rem 0 0.5rem; color: var(--muted); }
+.hidden { display: none; }
+
+/* HEUTE-Liste */
+.habit-row {
+  display: flex; align-items: center; gap: 0.8rem;
+  background: var(--card); border-radius: 14px;
+  padding: 1rem; margin-bottom: 0.7rem;
+}
+.habit-check {
+  width: 44px; height: 44px; border-radius: 50%; flex: 0 0 auto;
+  border: 3px solid var(--muted); background: transparent;
+  transition: transform 0.12s ease, background 0.12s ease;
+}
+.habit-check.done { background: var(--accent); border-color: var(--accent); transform: scale(1.05); }
+.habit-info { flex: 1; }
+.habit-info .name { font-size: 1.1rem; }
+.habit-info .streak { color: var(--muted); font-size: 0.9rem; }
+
+/* Statistik */
+.chips { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem; }
+.chips button {
+  background: var(--card); color: var(--text); border: none;
+  padding: 0.5rem 0.9rem; border-radius: 999px; font-size: 0.9rem;
+}
+.chips button.active { background: var(--accent); color: #06281d; }
+.stat-cards { display: flex; gap: 0.7rem; }
+.stat-card { flex: 1; background: var(--card); border-radius: 14px; padding: 0.9rem; text-align: center; }
+.stat-card span { display: block; font-size: 1.5rem; font-weight: 700; }
+.stat-card label { color: var(--muted); font-size: 0.8rem; }
+
+/* Heatmap */
+#heatmap { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+.cell { aspect-ratio: 1; border-radius: 4px; background: var(--grid-empty); }
+.cell.tappable { outline: 2px solid var(--muted); }
+
+/* Verwalten */
+.new-habit, .backup { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
+.new-habit input[type=text] { flex: 1; padding: 0.6rem; border-radius: 10px; border: none; }
+button { font-size: 1rem; padding: 0.6rem 1rem; border: none; border-radius: 10px;
+  background: var(--accent); color: #06281d; }
+.manage-row { display: flex; align-items: center; gap: 0.6rem; background: var(--card);
+  border-radius: 12px; padding: 0.7rem; margin-bottom: 0.6rem; }
+.manage-row .dot { width: 18px; height: 18px; border-radius: 50%; }
+.manage-row .name { flex: 1; }
+.manage-row button { background: var(--grid-empty); color: var(--text); padding: 0.4rem 0.7rem; font-size: 0.85rem; }
+
+/* Tab-Leiste */
+.tabbar {
+  position: fixed; bottom: 0; left: 0; right: 0; display: flex;
+  background: var(--card); border-top: 1px solid #000;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.tab { flex: 1; background: transparent; color: var(--muted); border-radius: 0; padding: 0.9rem 0; }
+.tab.active { color: var(--accent); }
+canvas { width: 100%; height: auto; background: var(--card); border-radius: 12px; }

@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#111827">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="style.css">
+  <title>Habit-Tracker</title>
+</head>
+<body>
+  <main>
+    <!-- HEUTE -->
+    <section id="view-today" class="view">
+      <h1>Heute</h1>
+      <div id="today-list"></div>
+    </section>
+
+    <!-- STATISTIK -->
+    <section id="view-stats" class="view hidden">
+      <h1>Statistik</h1>
+      <div id="stats-habit-select" class="chips"></div>
+      <div class="stat-cards">
+        <div class="stat-card"><span id="stat-current">0</span><label>Aktuelle Serie</label></div>
+        <div class="stat-card"><span id="stat-longest">0</span><label>Längste Serie</label></div>
+        <div class="stat-card"><span id="stat-rate">0%</span><label>Erfolgsquote</label></div>
+      </div>
+      <div id="stat-range" class="chips">
+        <button data-range="7">7 Tage</button>
+        <button data-range="30" class="active">30 Tage</button>
+        <button data-range="0">Gesamt</button>
+      </div>
+      <h2>Kalender</h2>
+      <div id="heatmap"></div>
+      <h2>Verlauf (wöchentlich)</h2>
+      <canvas id="trend" width="320" height="140"></canvas>
+    </section>
+
+    <!-- VERWALTEN -->
+    <section id="view-manage" class="view hidden">
+      <h1>Verwalten</h1>
+      <div class="new-habit">
+        <input id="new-name" type="text" placeholder="Name der Gewohnheit" maxlength="40">
+        <input id="new-color" type="color" value="#34d399">
+        <button id="add-habit">Hinzufügen</button>
+      </div>
+      <div id="manage-list"></div>
+      <h2>Backup</h2>
+      <div class="backup">
+        <button id="export-btn">Exportieren</button>
+        <button id="import-btn">Importieren</button>
+        <input id="import-file" type="file" accept="application/json" hidden>
+      </div>
+    </section>
+  </main>
+
+  <nav class="tabbar">
+    <button class="tab active" data-view="today">Heute</button>
+    <button class="tab" data-view="stats">Statistik</button>
+    <button class="tab" data-view="manage">Verwalten</button>
+  </nav>
+
+  <script src="stats.js"></script>
+  <script src="storage.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
