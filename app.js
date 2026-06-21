@@ -139,35 +139,81 @@ function renderManage() {
 function renderStats() {
   const habits = activeHabits();
   if (habits.length === 0) {
-    document.getElementById("stats-habit-select").innerHTML = "<p>Keine Gewohnheiten.</p>";
+    document.getElementById("stats-habit-select").innerHTML = '<p class="empty">Keine Gewohnheiten.</p>';
     document.getElementById("heatmap").innerHTML = "";
     document.getElementById("cal-month").textContent = "";
     document.getElementById("stat-current").textContent = "0";
     document.getElementById("stat-longest").textContent = "0";
     document.getElementById("stat-rate").textContent = "0%";
-    const trendCanvas = document.getElementById("trend");
-    trendCanvas.getContext("2d").clearRect(0, 0, trendCanvas.width, trendCanvas.height);
     return;
   }
-  if (!activeHabitId || !habits.some(function (h) { return h.id === activeHabitId; })) {
-    activeHabitId = habits[0].id;
+  if (activeHabitId !== "all" && !habits.some(function (h) { return h.id === activeHabitId; })) {
+    activeHabitId = "all";
   }
   renderHabitChips(habits);
-  const habit = habits.find(function (h) { return h.id === activeHabitId; });
-  const entries = state.eintraege[habit.id] || {};
   const today = todayKey();
   const range = activeRange === 0 ? null : activeRange;
+
+  if (activeHabitId === "all") {
+    setStatLabels("Heute", "Perfekte Tage", "Ø Quote");
+    let doneToday = 0;
+    habits.forEach(function (h) {
+      const e = state.eintraege[h.id] || {};
+      if (e[today]) { doneToday++; }
+    });
+    document.getElementById("stat-current").textContent = doneToday + "/" + habits.length;
+
+    let earliest = today, sum = 0;
+    habits.forEach(function (h) {
+      if (h.erstelltAm < earliest) { earliest = h.erstelltAm; }
+      const e = state.eintraege[h.id] || {};
+      sum += successRate(e, h.erstelltAm, today, range);
+    });
+    document.getElementById("stat-rate").textContent = Math.round(sum / habits.length) + "%";
+
+    let perfect = 0, cur = earliest;
+    while (cur <= today) {
+      let existing = 0, done = 0;
+      habits.forEach(function (h) {
+        if (h.erstelltAm <= cur) {
+          existing++;
+          const e = state.eintraege[h.id] || {};
+          if (e[cur]) { done++; }
+        }
+      });
+      if (existing > 0 && done === existing) { perfect++; }
+      cur = addDays(cur, 1);
+    }
+    document.getElementById("stat-longest").textContent = perfect;
+
+    renderCalendarCombined(habits, today);
+    return;
+  }
+
+  setStatLabels("Aktuelle Serie", "Längste Serie", "Erfolgsquote");
+  const habit = habits.find(function (h) { return h.id === activeHabitId; });
+  const entries = state.eintraege[habit.id] || {};
   document.getElementById("stat-current").textContent = currentStreak(entries, today);
   document.getElementById("stat-longest").textContent = longestStreak(entries);
   document.getElementById("stat-rate").textContent =
     successRate(entries, habit.erstelltAm, today, range) + "%";
   renderCalendar(habit, entries, today);
-  drawTrend(habit, entries, today);
+}
+
+function setStatLabels(a, b, c) {
+  document.getElementById("stat-l1").textContent = a;
+  document.getElementById("stat-l2").textContent = b;
+  document.getElementById("stat-l3").textContent = c;
 }
 
 function renderHabitChips(habits) {
   const box = document.getElementById("stats-habit-select");
   box.innerHTML = "";
+  const allBtn = document.createElement("button");
+  allBtn.textContent = "Alle";
+  if (activeHabitId === "all") { allBtn.classList.add("active"); }
+  allBtn.addEventListener("click", function () { activeHabitId = "all"; renderStats(); });
+  box.appendChild(allBtn);
   habits.forEach(function (h) {
     const b = document.createElement("button");
     b.textContent = h.name;
@@ -177,7 +223,7 @@ function renderHabitChips(habits) {
   });
 }
 
-function renderCalendar(habit, entries, today) {
+function monthGridScaffold(today, dayFn) {
   const now = new Date();
   if (!statsMonth) { statsMonth = { y: now.getFullYear(), m: now.getMonth() }; }
   const y = statsMonth.y, m = statsMonth.m;
@@ -187,7 +233,6 @@ function renderCalendar(habit, entries, today) {
 
   const grid = document.getElementById("heatmap");
   grid.innerHTML = "";
-  const yesterday = addDays(today, -1);
   const daysInMonth = new Date(y, m + 1, 0).getDate();
   const firstDow = (new Date(y, m, 1).getDay() + 6) % 7; // Montag = 0
 
@@ -201,7 +246,16 @@ function renderCalendar(habit, entries, today) {
     const cell = document.createElement("div");
     cell.className = "cell";
     cell.textContent = d;
-    if (key > today) { cell.classList.add("future"); }
+    const future = key > today;
+    if (future) { cell.classList.add("future"); }
+    dayFn(cell, key, future);
+    grid.appendChild(cell);
+  }
+}
+
+function renderCalendar(habit, entries, today) {
+  const yesterday = addDays(today, -1);
+  monthGridScaffold(today, function (cell, key) {
     if (entries[key]) {
       cell.classList.add("done");
       cell.style.background = habit.farbe;
@@ -215,73 +269,26 @@ function renderCalendar(habit, entries, today) {
         renderStats();
       });
     }
-    grid.appendChild(cell);
-  }
-}
-
-function cssVar(name, fallback) {
-  const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
-  return v || fallback;
-}
-
-function drawTrend(habit, entries, today) {
-  const canvas = document.getElementById("trend");
-  const ctx = canvas.getContext("2d");
-  const W = canvas.width, H = canvas.height, pad = 18;
-  ctx.clearRect(0, 0, W, H);
-  const line = cssVar("--line", "#d9ded6");
-  const muted = cssVar("--muted", "#929b92");
-  const series = weeklyRates(entries, habit.erstelltAm, today);
-
-  // Baseline (nur unten, ruhig)
-  ctx.strokeStyle = line;
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.moveTo(pad, H - pad); ctx.lineTo(W - pad, H - pad);
-  ctx.stroke();
-
-  if (series.length === 0) {
-    ctx.fillStyle = muted;
-    ctx.font = "italic 13px ui-serif, Georgia, serif";
-    ctx.textAlign = "center";
-    ctx.fillText("Noch keine Daten", W / 2, H / 2);
-    return;
-  }
-
-  const plotW = W - pad * 2, plotH = H - pad * 2;
-  function x(i) { return pad + (series.length === 1 ? plotW / 2 : (plotW * i) / (series.length - 1)); }
-  function y(rate) { return pad + plotH * (1 - rate / 100); }
-
-  // Weiche Fläche unter der Linie
-  ctx.beginPath();
-  ctx.moveTo(x(0), H - pad);
-  series.forEach(function (p, i) { ctx.lineTo(x(i), y(p.rate)); });
-  ctx.lineTo(x(series.length - 1), H - pad);
-  ctx.closePath();
-  ctx.fillStyle = hexToRgba(habit.farbe, 0.14);
-  ctx.fill();
-
-  // Linie
-  ctx.strokeStyle = habit.farbe;
-  ctx.lineWidth = 2;
-  ctx.lineJoin = "round";
-  ctx.beginPath();
-  series.forEach(function (p, i) {
-    if (i === 0) { ctx.moveTo(x(i), y(p.rate)); } else { ctx.lineTo(x(i), y(p.rate)); }
-  });
-  ctx.stroke();
-
-  // Punkte
-  ctx.fillStyle = habit.farbe;
-  series.forEach(function (p, i) {
-    ctx.beginPath(); ctx.arc(x(i), y(p.rate), 2.5, 0, Math.PI * 2); ctx.fill();
   });
 }
 
-function hexToRgba(hex, a) {
-  const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-  if (!m) { return "rgba(124,154,134," + a + ")"; }
-  return "rgba(" + parseInt(m[1], 16) + "," + parseInt(m[2], 16) + "," + parseInt(m[3], 16) + "," + a + ")";
+function renderCalendarCombined(habits, today) {
+  monthGridScaffold(today, function (cell, key, future) {
+    if (future) { return; }
+    let existing = 0, done = 0;
+    habits.forEach(function (h) {
+      if (h.erstelltAm <= key) {
+        existing++;
+        const e = state.eintraege[h.id] || {};
+        if (e[key]) { done++; }
+      }
+    });
+    if (existing > 0 && done > 0) {
+      const frac = done / existing;
+      cell.style.background = "rgba(29,185,84," + (0.28 + 0.72 * frac).toFixed(2) + ")";
+      if (frac >= 0.6) { cell.style.color = "#04130a"; }
+    }
+  });
 }
 
 document.getElementById("add-habit").addEventListener("click", function () {

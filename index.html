@@ -29,9 +29,9 @@
       <h1>Statistik</h1>
       <div id="stats-habit-select" class="chips"></div>
       <div class="stat-cards">
-        <div class="stat-card"><span id="stat-current">0</span><label>Aktuelle Serie</label></div>
-        <div class="stat-card"><span id="stat-longest">0</span><label>Längste Serie</label></div>
-        <div class="stat-card"><span id="stat-rate">0%</span><label>Erfolgsquote</label></div>
+        <div class="stat-card"><span id="stat-current">0</span><label id="stat-l1">Aktuelle Serie</label></div>
+        <div class="stat-card"><span id="stat-longest">0</span><label id="stat-l2">Längste Serie</label></div>
+        <div class="stat-card"><span id="stat-rate">0%</span><label id="stat-l3">Erfolgsquote</label></div>
       </div>
       <div id="stat-range" class="chips">
         <button data-range="7">7 Tage</button>
@@ -45,8 +45,6 @@
       </div>
       <div id="cal-weekdays"><span>Mo</span><span>Di</span><span>Mi</span><span>Do</span><span>Fr</span><span>Sa</span><span>So</span></div>
       <div id="heatmap"></div>
-      <h2>Verlauf (wöchentlich)</h2>
-      <canvas id="trend" width="320" height="140"></canvas>
     </section>
 
     <!-- VERWALTEN -->
@@ -54,7 +52,7 @@
       <h1>Verwalten</h1>
       <div class="new-habit">
         <input id="new-name" type="text" placeholder="Name der Gewohnheit" maxlength="40">
-        <input id="new-info" type="text" placeholder="Zusatzinfo, z. B. mind. 3 Liter (optional)" maxlength="60">
+        <input id="new-info" type="text" placeholder="Zusatzinfo (optional)" maxlength="60">
         <div class="new-habit-row">
           <input id="new-color" type="color" value="#1db954">
           <button id="add-habit">Hinzufügen</button>
