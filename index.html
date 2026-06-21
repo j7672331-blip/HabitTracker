@@ -38,7 +38,12 @@
         <button data-range="30" class="active">30 Tage</button>
         <button data-range="0">Gesamt</button>
       </div>
-      <h2>Kalender</h2>
+      <div class="cal-head">
+        <button id="cal-prev" aria-label="Vorheriger Monat">‹</button>
+        <span id="cal-month"></span>
+        <button id="cal-next" aria-label="Nächster Monat">›</button>
+      </div>
+      <div id="cal-weekdays"><span>Mo</span><span>Di</span><span>Mi</span><span>Do</span><span>Fr</span><span>Sa</span><span>So</span></div>
       <div id="heatmap"></div>
       <h2>Verlauf (wöchentlich)</h2>
       <canvas id="trend" width="320" height="140"></canvas>
@@ -49,8 +54,11 @@
       <h1>Verwalten</h1>
       <div class="new-habit">
         <input id="new-name" type="text" placeholder="Name der Gewohnheit" maxlength="40">
-        <input id="new-color" type="color" value="#7c9a86">
-        <button id="add-habit">Hinzufügen</button>
+        <input id="new-info" type="text" placeholder="Zusatzinfo, z. B. mind. 3 Liter (optional)" maxlength="60">
+        <div class="new-habit-row">
+          <input id="new-color" type="color" value="#1db954">
+          <button id="add-habit">Hinzufügen</button>
+        </div>
       </div>
       <div id="manage-list"></div>
       <h2>Backup</h2>

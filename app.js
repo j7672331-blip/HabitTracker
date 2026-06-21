@@ -4,6 +4,7 @@ let state = loadData();
 let currentView = "today";
 let activeHabitId = null;
 let activeRange = 30;
+let statsMonth = null;
 
 function activeHabits() {
   return state.habits.filter(function (h) { return !h.archiviert; });
@@ -55,7 +56,7 @@ function renderToday() {
     const entries = state.eintraege[h.id] || {};
     const done = !!entries[today];
     if (done) { doneCount++; }
-    const streak = currentStreak(entries, today);
+    const info = h.info || "";
     const row = document.createElement("button");
     row.className = "habit-row" + (done ? " done" : "");
     row.style.setProperty("--c", h.farbe);
@@ -63,9 +64,7 @@ function renderToday() {
       '<span class="habit-dot" style="background:' + escapeHtml(h.farbe) + '"></span>' +
       '<span class="habit-text">' +
         '<span class="habit-name">' + escapeHtml(h.name) + "</span>" +
-        '<span class="habit-streak">' +
-          (streak > 0 ? '<span class="num">' + streak + "</span> " + (streak === 1 ? "Tag" : "Tage") + " Serie" : "Noch keine Serie") +
-        "</span>" +
+        (info ? '<span class="habit-note">' + escapeHtml(info) + "</span>" : "") +
       "</span>" +
       '<span class="habit-mark"></span>';
     row.addEventListener("click", function () {
@@ -104,16 +103,19 @@ function renderManage() {
     row.className = "manage-row";
     row.innerHTML =
       '<span class="dot" style="background:' + escapeHtml(h.farbe) + '"></span>' +
-      '<span class="name">' + escapeHtml(h.name) + (h.archiviert ? " (archiviert)" : "") + "</span>";
+      '<span class="name">' + escapeHtml(h.name) + (h.archiviert ? " (archiviert)" : "") +
+        (h.info ? '<span class="manage-note">' + escapeHtml(h.info) + "</span>" : "") +
+      "</span>";
     const renameBtn = document.createElement("button");
-    renameBtn.textContent = "Umbenennen";
+    renameBtn.textContent = "Bearbeiten";
     renameBtn.addEventListener("click", function () {
-      const name = prompt("Neuer Name:", h.name);
-      if (name) {
-        const trimmed = name.trim();
-        if (!trimmed) { return; }
-        updateHabit(state, h.id, trimmed, h.farbe); saveData(state); renderManage();
-      }
+      const name = prompt("Name:", h.name);
+      if (name === null) { return; }
+      const trimmed = name.trim();
+      if (!trimmed) { return; }
+      const info = prompt("Zusatzinfo (kann leer sein):", h.info || "");
+      if (info === null) { return; }
+      updateHabit(state, h.id, trimmed, h.farbe, info.trim()); saveData(state); renderManage();
     });
     const archiveBtn = document.createElement("button");
     archiveBtn.textContent = h.archiviert ? "—" : "Archivieren";
@@ -139,6 +141,7 @@ function renderStats() {
   if (habits.length === 0) {
     document.getElementById("stats-habit-select").innerHTML = "<p>Keine Gewohnheiten.</p>";
     document.getElementById("heatmap").innerHTML = "";
+    document.getElementById("cal-month").textContent = "";
     document.getElementById("stat-current").textContent = "0";
     document.getElementById("stat-longest").textContent = "0";
     document.getElementById("stat-rate").textContent = "0%";
@@ -158,7 +161,7 @@ function renderStats() {
   document.getElementById("stat-longest").textContent = longestStreak(entries);
   document.getElementById("stat-rate").textContent =
     successRate(entries, habit.erstelltAm, today, range) + "%";
-  renderHeatmap(habit, entries, today);
+  renderCalendar(habit, entries, today);
   drawTrend(habit, entries, today);
 }
 
@@ -174,26 +177,46 @@ function renderHabitChips(habits) {
   });
 }
 
-function renderHeatmap(habit, entries, today) {
-  const box = document.getElementById("heatmap");
-  box.innerHTML = "";
+function renderCalendar(habit, entries, today) {
+  const now = new Date();
+  if (!statsMonth) { statsMonth = { y: now.getFullYear(), m: now.getMonth() }; }
+  const y = statsMonth.y, m = statsMonth.m;
+  document.getElementById("cal-month").textContent = MONTHS[m] + " " + y;
+  document.getElementById("cal-next").disabled =
+    (y === now.getFullYear() && m === now.getMonth());
+
+  const grid = document.getElementById("heatmap");
+  grid.innerHTML = "";
   const yesterday = addDays(today, -1);
-  const days = heatmapDays(entries, today, 91); // ~13 Wochen
-  days.forEach(function (d) {
+  const daysInMonth = new Date(y, m + 1, 0).getDate();
+  const firstDow = (new Date(y, m, 1).getDay() + 6) % 7; // Montag = 0
+
+  for (let i = 0; i < firstDow; i++) {
+    const blank = document.createElement("div");
+    blank.className = "cell blank";
+    grid.appendChild(blank);
+  }
+  for (let d = 1; d <= daysInMonth; d++) {
+    const key = y + "-" + String(m + 1).padStart(2, "0") + "-" + String(d).padStart(2, "0");
     const cell = document.createElement("div");
     cell.className = "cell";
-    if (d.done) { cell.classList.add("done"); cell.style.background = habit.farbe; }
-    if (d.date === today || d.date === yesterday) {
+    cell.textContent = d;
+    if (key > today) { cell.classList.add("future"); }
+    if (entries[key]) {
+      cell.classList.add("done");
+      cell.style.background = habit.farbe;
+      cell.style.color = "#04130a";
+    }
+    if (key === today || key === yesterday) {
       cell.classList.add("tappable");
-      cell.title = d.date;
       cell.addEventListener("click", function () {
-        toggleEntry(state, habit.id, d.date);
+        toggleEntry(state, habit.id, key);
         saveData(state);
         renderStats();
       });
     }
-    box.appendChild(cell);
-  });
+    grid.appendChild(cell);
+  }
 }
 
 function cssVar(name, fallback) {
@@ -264,10 +287,12 @@ function hexToRgba(hex, a) {
 document.getElementById("add-habit").addEventListener("click", function () {
   const name = document.getElementById("new-name").value.trim();
   const farbe = document.getElementById("new-color").value;
+  const info = document.getElementById("new-info").value.trim();
   if (!name) { return; }
-  createHabit(state, name, farbe, todayKey());
+  createHabit(state, name, farbe, todayKey(), info);
   saveData(state);
   document.getElementById("new-name").value = "";
+  document.getElementById("new-info").value = "";
   renderManage();
 });
 
@@ -300,6 +325,22 @@ document.getElementById("import-file").addEventListener("change", function (ev) 
     ev.target.value = "";
   };
   reader.readAsText(file);
+});
+
+document.getElementById("cal-prev").addEventListener("click", function () {
+  if (!statsMonth) { return; }
+  statsMonth.m--;
+  if (statsMonth.m < 0) { statsMonth.m = 11; statsMonth.y--; }
+  renderStats();
+});
+
+document.getElementById("cal-next").addEventListener("click", function () {
+  if (!statsMonth) { return; }
+  const now = new Date();
+  if (statsMonth.y === now.getFullYear() && statsMonth.m === now.getMonth()) { return; }
+  statsMonth.m++;
+  if (statsMonth.m > 11) { statsMonth.m = 0; statsMonth.y++; }
+  renderStats();
 });
 
 document.querySelectorAll("#stat-range button").forEach(function (b) {

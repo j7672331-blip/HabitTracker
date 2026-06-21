@@ -21,14 +21,18 @@ function genId() {
   return "h" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 }
 
-function createHabit(data, name, farbe, todayK) {
-  data.habits.push({ id: genId(), name: name, farbe: farbe, erstelltAm: todayK, archiviert: false });
+function createHabit(data, name, farbe, todayK, info) {
+  data.habits.push({ id: genId(), name: name, farbe: farbe, info: info || "", erstelltAm: todayK, archiviert: false });
   return data;
 }
 
-function updateHabit(data, id, name, farbe) {
+function updateHabit(data, id, name, farbe, info) {
   const h = data.habits.find(function (x) { return x.id === id; });
-  if (h) { h.name = name; h.farbe = farbe; }
+  if (h) {
+    h.name = name;
+    h.farbe = farbe;
+    if (info !== undefined) { h.info = info; }
+  }
   return data;
 }
 

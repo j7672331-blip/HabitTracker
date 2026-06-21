@@ -63,6 +63,11 @@ assertEqual("weeklyRates one partial week",
   assertEqual("createHabit sets fields",
     [d.habits[0].name, d.habits[0].farbe, d.habits[0].erstelltAm, d.habits[0].archiviert],
     ["Sport", "#34d399", "2026-06-21", false]);
+  assertEqual("createHabit defaults info to empty", d.habits[0].info, "");
+
+  let d2 = { habits: [], eintraege: {} };
+  createHabit(d2, "Wasser", "#1db954", "2026-06-21", "mind. 3 Liter");
+  assertEqual("createHabit stores info", d2.habits[0].info, "mind. 3 Liter");
 
   const id = d.habits[0].id;
   toggleEntry(d, id, "2026-06-21");
