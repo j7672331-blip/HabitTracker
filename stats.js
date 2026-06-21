@@ -46,3 +46,21 @@ function longestStreak(entries) {
   }
   return best;
 }
+
+function successRate(entries, createdAt, todayK, rangeDays) {
+  let start = createdAt;
+  if (rangeDays) {
+    const rangeStart = addDays(todayK, -(rangeDays - 1));
+    if (rangeStart > start) { start = rangeStart; }
+  }
+  if (start > todayK) { return 0; }
+  let total = 0;
+  let done = 0;
+  let cur = start;
+  while (cur <= todayK) {
+    total++;
+    if (entries[cur]) { done++; }
+    cur = addDays(cur, 1);
+  }
+  return total === 0 ? 0 : Math.round((done / total) * 100);
+}

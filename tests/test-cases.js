@@ -25,3 +25,15 @@ assertEqual("longestStreak single day",
   longestStreak({ "2026-06-01": true }), 1);
 assertEqual("longestStreak empty",
   longestStreak({}), 0);
+
+// --- stats: Erfolgsquote ---
+assertEqual("successRate full since creation",
+  successRate({ "2026-06-19": true, "2026-06-21": true }, "2026-06-19", "2026-06-21", null), 67);
+assertEqual("successRate 100 percent",
+  successRate({ "2026-06-20": true, "2026-06-21": true }, "2026-06-20", "2026-06-21", null), 100);
+assertEqual("successRate 0 when nothing done",
+  successRate({}, "2026-06-19", "2026-06-21", null), 0);
+assertEqual("successRate range limited to last 7 days",
+  successRate({ "2026-06-21": true }, "2026-01-01", "2026-06-21", 7), 14);
+assertEqual("successRate range start clamped to creation",
+  successRate({ "2026-06-21": true }, "2026-06-20", "2026-06-21", 7), 50);
