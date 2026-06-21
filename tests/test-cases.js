@@ -37,3 +37,10 @@ assertEqual("successRate range limited to last 7 days",
   successRate({ "2026-06-21": true }, "2026-01-01", "2026-06-21", 7), 14);
 assertEqual("successRate range start clamped to creation",
   successRate({ "2026-06-21": true }, "2026-06-20", "2026-06-21", 7), 50);
+
+// --- stats: Heatmap ---
+assertEqual("heatmapDays returns numDays entries ending today",
+  heatmapDays({ "2026-06-20": true }, "2026-06-21", 3),
+  [ { date: "2026-06-19", done: false },
+    { date: "2026-06-20", done: true },
+    { date: "2026-06-21", done: false } ]);

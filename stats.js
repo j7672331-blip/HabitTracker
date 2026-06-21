@@ -64,3 +64,12 @@ function successRate(entries, createdAt, todayK, rangeDays) {
   }
   return total === 0 ? 0 : Math.round((done / total) * 100);
 }
+
+function heatmapDays(entries, todayK, numDays) {
+  const out = [];
+  for (let i = numDays - 1; i >= 0; i--) {
+    const key = addDays(todayK, -i);
+    out.push({ date: key, done: !!entries[key] });
+  }
+  return out;
+}
