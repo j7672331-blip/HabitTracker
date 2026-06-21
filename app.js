@@ -101,7 +101,93 @@ function renderManage() {
     list.appendChild(row);
   });
 }
-function renderStats() {}
+function renderStats() {
+  const habits = activeHabits();
+  if (habits.length === 0) {
+    document.getElementById("stats-habit-select").innerHTML = "<p>Keine Gewohnheiten.</p>";
+    document.getElementById("heatmap").innerHTML = "";
+    return;
+  }
+  if (!activeHabitId || !habits.some(function (h) { return h.id === activeHabitId; })) {
+    activeHabitId = habits[0].id;
+  }
+  renderHabitChips(habits);
+  const habit = habits.find(function (h) { return h.id === activeHabitId; });
+  const entries = state.eintraege[habit.id] || {};
+  const today = todayKey();
+  const range = activeRange === 0 ? null : activeRange;
+  document.getElementById("stat-current").textContent = currentStreak(entries, today);
+  document.getElementById("stat-longest").textContent = longestStreak(entries);
+  document.getElementById("stat-rate").textContent =
+    successRate(entries, habit.erstelltAm, today, range) + "%";
+  renderHeatmap(habit, entries, today);
+  drawTrend(habit, entries, today);
+}
+
+function renderHabitChips(habits) {
+  const box = document.getElementById("stats-habit-select");
+  box.innerHTML = "";
+  habits.forEach(function (h) {
+    const b = document.createElement("button");
+    b.textContent = h.name;
+    if (h.id === activeHabitId) { b.classList.add("active"); }
+    b.addEventListener("click", function () { activeHabitId = h.id; renderStats(); });
+    box.appendChild(b);
+  });
+}
+
+function renderHeatmap(habit, entries, today) {
+  const box = document.getElementById("heatmap");
+  box.innerHTML = "";
+  const yesterday = addDays(today, -1);
+  const days = heatmapDays(entries, today, 91); // ~13 Wochen
+  days.forEach(function (d) {
+    const cell = document.createElement("div");
+    cell.className = "cell";
+    if (d.done) { cell.style.background = habit.farbe; }
+    if (d.date === today || d.date === yesterday) {
+      cell.classList.add("tappable");
+      cell.title = d.date;
+      cell.addEventListener("click", function () {
+        toggleEntry(state, habit.id, d.date);
+        saveData(state);
+        renderStats();
+      });
+    }
+    box.appendChild(cell);
+  });
+}
+
+function drawTrend(habit, entries, today) {
+  const canvas = document.getElementById("trend");
+  const ctx = canvas.getContext("2d");
+  const W = canvas.width, H = canvas.height, pad = 24;
+  ctx.clearRect(0, 0, W, H);
+  const series = weeklyRates(entries, habit.erstelltAm, today);
+  // Achsen
+  ctx.strokeStyle = "#4b5563";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(pad, pad / 2); ctx.lineTo(pad, H - pad); ctx.lineTo(W - 6, H - pad);
+  ctx.stroke();
+  if (series.length === 0) { return; }
+  const plotW = W - pad - 6, plotH = H - pad - pad / 2;
+  function x(i) { return pad + (series.length === 1 ? plotW / 2 : (plotW * i) / (series.length - 1)); }
+  function y(rate) { return (pad / 2) + plotH * (1 - rate / 100); }
+  // Linie
+  ctx.strokeStyle = habit.farbe;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  series.forEach(function (p, i) {
+    if (i === 0) { ctx.moveTo(x(i), y(p.rate)); } else { ctx.lineTo(x(i), y(p.rate)); }
+  });
+  ctx.stroke();
+  // Punkte
+  ctx.fillStyle = habit.farbe;
+  series.forEach(function (p, i) {
+    ctx.beginPath(); ctx.arc(x(i), y(p.rate), 3, 0, Math.PI * 2); ctx.fill();
+  });
+}
 
 document.getElementById("add-habit").addEventListener("click", function () {
   const name = document.getElementById("new-name").value.trim();
@@ -141,6 +227,16 @@ document.getElementById("import-file").addEventListener("change", function (ev) 
     }
   };
   reader.readAsText(file);
+});
+
+document.querySelectorAll("#stat-range button").forEach(function (b) {
+  b.addEventListener("click", function () {
+    activeRange = Number(b.dataset.range);
+    document.querySelectorAll("#stat-range button").forEach(function (x) {
+      x.classList.toggle("active", x === b);
+    });
+    renderStats();
+  });
 });
 
 showView("today");
