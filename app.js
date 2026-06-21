@@ -26,33 +26,59 @@ function render() {
   else if (currentView === "manage") { renderManage(); }
 }
 
+const WEEKDAYS = ["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"];
+const MONTHS = ["Januar", "Februar", "März", "April", "Mai", "Juni",
+  "Juli", "August", "September", "Oktober", "November", "Dezember"];
+
 function renderToday() {
-  const list = document.getElementById("today-list");
-  list.innerHTML = "";
+  const now = new Date();
   const today = todayKey();
+  document.getElementById("today-weekday").textContent = WEEKDAYS[now.getDay()];
+  document.getElementById("today-date").textContent = now.getDate() + ". " + MONTHS[now.getMonth()];
+
+  const list = document.getElementById("today-list");
+  const progress = document.getElementById("today-progress");
+  list.innerHTML = "";
   const habits = activeHabits();
+
   if (habits.length === 0) {
-    list.innerHTML = '<p>Noch keine Gewohnheiten. Lege unter "Verwalten" eine an.</p>';
+    progress.textContent = "";
+    progress.classList.remove("complete");
+    list.innerHTML = '<p class="empty">Noch keine Gewohnheiten. Lege unter „Verwalten" eine an.</p>';
     return;
   }
+
+  let doneCount = 0;
   habits.forEach(function (h) {
     const entries = state.eintraege[h.id] || {};
     const done = !!entries[today];
-    const row = document.createElement("div");
-    row.className = "habit-row";
+    if (done) { doneCount++; }
     const streak = currentStreak(entries, today);
+    const row = document.createElement("button");
+    row.className = "habit-row" + (done ? " done" : "");
+    row.style.setProperty("--c", h.farbe);
     row.innerHTML =
-      '<button class="habit-check' + (done ? " done" : "") + '"' +
-      ' style="' + (done ? "background:" + escapeHtml(h.farbe) + ";border-color:" + escapeHtml(h.farbe) : "border-color:" + escapeHtml(h.farbe)) + '"></button>' +
-      '<div class="habit-info"><div class="name">' + escapeHtml(h.name) + '</div>' +
-      '<div class="streak">' + (streak > 0 ? "🔥 " + streak + " Tage" : "Noch keine Serie") + "</div></div>";
-    row.querySelector(".habit-check").addEventListener("click", function () {
+      '<span class="habit-dot" style="background:' + escapeHtml(h.farbe) + '"></span>' +
+      '<span class="habit-text">' +
+        '<span class="habit-name">' + escapeHtml(h.name) + "</span>" +
+        '<span class="habit-streak">' +
+          (streak > 0 ? '<span class="num">' + streak + "</span> " + (streak === 1 ? "Tag" : "Tage") + " Serie" : "Noch keine Serie") +
+        "</span>" +
+      "</span>" +
+      '<span class="habit-mark"></span>';
+    row.addEventListener("click", function () {
       toggleEntry(state, h.id, today);
       saveData(state);
       renderToday();
     });
     list.appendChild(row);
   });
+
+  const all = doneCount === habits.length;
+  progress.classList.toggle("complete", all);
+  progress.textContent = all
+    ? "Für heute erledigt."
+    : doneCount + " von " + habits.length + " erledigt";
 }
 
 function escapeHtml(s) {
@@ -153,7 +179,7 @@ function renderHeatmap(habit, entries, today) {
   days.forEach(function (d) {
     const cell = document.createElement("div");
     cell.className = "cell";
-    if (d.done) { cell.style.background = habit.farbe; }
+    if (d.done) { cell.classList.add("done"); cell.style.background = habit.farbe; }
     if (d.date === today || d.date === yesterday) {
       cell.classList.add("tappable");
       cell.title = d.date;
@@ -167,35 +193,69 @@ function renderHeatmap(habit, entries, today) {
   });
 }
 
+function cssVar(name, fallback) {
+  const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  return v || fallback;
+}
+
 function drawTrend(habit, entries, today) {
   const canvas = document.getElementById("trend");
   const ctx = canvas.getContext("2d");
-  const W = canvas.width, H = canvas.height, pad = 24;
+  const W = canvas.width, H = canvas.height, pad = 18;
   ctx.clearRect(0, 0, W, H);
+  const line = cssVar("--line", "#d9ded6");
+  const muted = cssVar("--muted", "#929b92");
   const series = weeklyRates(entries, habit.erstelltAm, today);
-  // Achsen
-  ctx.strokeStyle = "#4b5563";
+
+  // Baseline (nur unten, ruhig)
+  ctx.strokeStyle = line;
   ctx.lineWidth = 1;
   ctx.beginPath();
-  ctx.moveTo(pad, pad / 2); ctx.lineTo(pad, H - pad); ctx.lineTo(W - 6, H - pad);
+  ctx.moveTo(pad, H - pad); ctx.lineTo(W - pad, H - pad);
   ctx.stroke();
-  if (series.length === 0) { return; }
-  const plotW = W - pad - 6, plotH = H - pad - pad / 2;
+
+  if (series.length === 0) {
+    ctx.fillStyle = muted;
+    ctx.font = "italic 13px ui-serif, Georgia, serif";
+    ctx.textAlign = "center";
+    ctx.fillText("Noch keine Daten", W / 2, H / 2);
+    return;
+  }
+
+  const plotW = W - pad * 2, plotH = H - pad * 2;
   function x(i) { return pad + (series.length === 1 ? plotW / 2 : (plotW * i) / (series.length - 1)); }
-  function y(rate) { return (pad / 2) + plotH * (1 - rate / 100); }
+  function y(rate) { return pad + plotH * (1 - rate / 100); }
+
+  // Weiche Fläche unter der Linie
+  ctx.beginPath();
+  ctx.moveTo(x(0), H - pad);
+  series.forEach(function (p, i) { ctx.lineTo(x(i), y(p.rate)); });
+  ctx.lineTo(x(series.length - 1), H - pad);
+  ctx.closePath();
+  ctx.fillStyle = hexToRgba(habit.farbe, 0.14);
+  ctx.fill();
+
   // Linie
   ctx.strokeStyle = habit.farbe;
   ctx.lineWidth = 2;
+  ctx.lineJoin = "round";
   ctx.beginPath();
   series.forEach(function (p, i) {
     if (i === 0) { ctx.moveTo(x(i), y(p.rate)); } else { ctx.lineTo(x(i), y(p.rate)); }
   });
   ctx.stroke();
+
   // Punkte
   ctx.fillStyle = habit.farbe;
   series.forEach(function (p, i) {
-    ctx.beginPath(); ctx.arc(x(i), y(p.rate), 3, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(x(i), y(p.rate), 2.5, 0, Math.PI * 2); ctx.fill();
   });
+}
+
+function hexToRgba(hex, a) {
+  const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  if (!m) { return "rgba(124,154,134," + a + ")"; }
+  return "rgba(" + parseInt(m[1], 16) + "," + parseInt(m[2], 16) + "," + parseInt(m[3], 16) + "," + a + ")";
 }
 
 document.getElementById("add-habit").addEventListener("click", function () {

@@ -3,9 +3,10 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#111827">
+  <meta name="theme-color" content="#edf0ec" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#161a17" media="(prefers-color-scheme: dark)">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
   <link rel="manifest" href="manifest.json">
   <link rel="stylesheet" href="style.css">
@@ -15,7 +16,11 @@
   <main>
     <!-- HEUTE -->
     <section id="view-today" class="view">
-      <h1>Heute</h1>
+      <header class="masthead">
+        <p class="eyebrow" id="today-weekday">Heute</p>
+        <h1 class="date-display" id="today-date">—</h1>
+        <p class="progress-line" id="today-progress"></p>
+      </header>
       <div id="today-list"></div>
     </section>
 
@@ -44,7 +49,7 @@
       <h1>Verwalten</h1>
       <div class="new-habit">
         <input id="new-name" type="text" placeholder="Name der Gewohnheit" maxlength="40">
-        <input id="new-color" type="color" value="#34d399">
+        <input id="new-color" type="color" value="#7c9a86">
         <button id="add-habit">Hinzufügen</button>
       </div>
       <div id="manage-list"></div>
