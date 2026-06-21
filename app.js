@@ -240,3 +240,11 @@ document.querySelectorAll("#stat-range button").forEach(function (b) {
 });
 
 showView("today");
+
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", function () {
+    navigator.serviceWorker.register("sw.js").catch(function (err) {
+      console.warn("SW-Registrierung fehlgeschlagen:", err);
+    });
+  });
+}
