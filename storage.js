@@ -60,7 +60,10 @@ function exportJson(data) {
 
 function importJson(str) {
   const d = JSON.parse(str);
-  const data = { habits: d.habits || [], eintraege: d.eintraege || {} };
+  if (!Array.isArray(d.habits) || typeof d.eintraege !== "object" || d.eintraege === null || Array.isArray(d.eintraege)) {
+    throw new Error("Ungültiges Backup-Format");
+  }
+  const data = { habits: d.habits, eintraege: d.eintraege };
   saveData(data);
   return data;
 }

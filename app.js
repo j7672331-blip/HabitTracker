@@ -43,7 +43,7 @@ function renderToday() {
     const streak = currentStreak(entries, today);
     row.innerHTML =
       '<button class="habit-check' + (done ? " done" : "") + '"' +
-      ' style="' + (done ? "background:" + h.farbe + ";border-color:" + h.farbe : "border-color:" + h.farbe) + '"></button>' +
+      ' style="' + (done ? "background:" + escapeHtml(h.farbe) + ";border-color:" + escapeHtml(h.farbe) : "border-color:" + escapeHtml(h.farbe)) + '"></button>' +
       '<div class="habit-info"><div class="name">' + escapeHtml(h.name) + '</div>' +
       '<div class="streak">' + (streak > 0 ? "🔥 " + streak + " Tage" : "Noch keine Serie") + "</div></div>";
     row.querySelector(".habit-check").addEventListener("click", function () {
@@ -74,13 +74,17 @@ function renderManage() {
     const row = document.createElement("div");
     row.className = "manage-row";
     row.innerHTML =
-      '<span class="dot" style="background:' + h.farbe + '"></span>' +
+      '<span class="dot" style="background:' + escapeHtml(h.farbe) + '"></span>' +
       '<span class="name">' + escapeHtml(h.name) + (h.archiviert ? " (archiviert)" : "") + "</span>";
     const renameBtn = document.createElement("button");
     renameBtn.textContent = "Umbenennen";
     renameBtn.addEventListener("click", function () {
       const name = prompt("Neuer Name:", h.name);
-      if (name) { updateHabit(state, h.id, name.trim(), h.farbe); saveData(state); renderManage(); }
+      if (name) {
+        const trimmed = name.trim();
+        if (!trimmed) { return; }
+        updateHabit(state, h.id, trimmed, h.farbe); saveData(state); renderManage();
+      }
     });
     const archiveBtn = document.createElement("button");
     archiveBtn.textContent = h.archiviert ? "—" : "Archivieren";
@@ -106,6 +110,11 @@ function renderStats() {
   if (habits.length === 0) {
     document.getElementById("stats-habit-select").innerHTML = "<p>Keine Gewohnheiten.</p>";
     document.getElementById("heatmap").innerHTML = "";
+    document.getElementById("stat-current").textContent = "0";
+    document.getElementById("stat-longest").textContent = "0";
+    document.getElementById("stat-rate").textContent = "0%";
+    const trendCanvas = document.getElementById("trend");
+    trendCanvas.getContext("2d").clearRect(0, 0, trendCanvas.width, trendCanvas.height);
     return;
   }
   if (!activeHabitId || !habits.some(function (h) { return h.id === activeHabitId; })) {
@@ -225,6 +234,7 @@ document.getElementById("import-file").addEventListener("change", function (ev) 
     } catch (e) {
       alert("Datei konnte nicht gelesen werden.");
     }
+    ev.target.value = "";
   };
   reader.readAsText(file);
 });
