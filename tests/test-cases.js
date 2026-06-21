@@ -54,3 +54,48 @@ assertEqual("startOfWeek on Monday returns same day",
 assertEqual("weeklyRates one partial week",
   weeklyRates({ "2026-06-15": true, "2026-06-16": true }, "2026-06-15", "2026-06-17"),
   [ { weekStart: "2026-06-15", rate: 67 } ]);
+
+// --- storage: Mutationen ---
+(function () {
+  let d = { habits: [], eintraege: {} };
+  createHabit(d, "Sport", "#34d399", "2026-06-21");
+  assertEqual("createHabit adds one habit", d.habits.length, 1);
+  assertEqual("createHabit sets fields",
+    [d.habits[0].name, d.habits[0].farbe, d.habits[0].erstelltAm, d.habits[0].archiviert],
+    ["Sport", "#34d399", "2026-06-21", false]);
+
+  const id = d.habits[0].id;
+  toggleEntry(d, id, "2026-06-21");
+  assertEqual("toggleEntry sets done", d.eintraege[id]["2026-06-21"], true);
+  toggleEntry(d, id, "2026-06-21");
+  assertEqual("toggleEntry removes done", d.eintraege[id]["2026-06-21"], undefined);
+
+  updateHabit(d, id, "Laufen", "#60a5fa");
+  assertEqual("updateHabit changes name+color",
+    [d.habits[0].name, d.habits[0].farbe], ["Laufen", "#60a5fa"]);
+
+  archiveHabit(d, id);
+  assertEqual("archiveHabit sets flag", d.habits[0].archiviert, true);
+
+  toggleEntry(d, id, "2026-06-20");
+  deleteHabit(d, id);
+  assertEqual("deleteHabit removes habit", d.habits.length, 0);
+  assertEqual("deleteHabit removes entries", d.eintraege[id], undefined);
+})();
+
+// --- storage: Persistenz + Backup ---
+(function () {
+  localStorage.removeItem("habitTrackerData");
+  assertEqual("loadData defaults when empty",
+    loadData(), { habits: [], eintraege: {} });
+
+  const d = { habits: [{ id: "h1", name: "X", farbe: "#fff", erstelltAm: "2026-06-21", archiviert: false }], eintraege: { h1: { "2026-06-21": true } } };
+  saveData(d);
+  assertEqual("saveData/loadData round-trips", loadData(), d);
+
+  const json = exportJson(d);
+  localStorage.removeItem("habitTrackerData");
+  const imported = importJson(json);
+  assertEqual("importJson restores data", imported, d);
+  assertEqual("importJson also persists", loadData(), d);
+})();
