@@ -285,7 +285,8 @@ function renderCalendarCombined(habits, today) {
     });
     if (existing > 0 && done > 0) {
       const frac = done / existing;
-      cell.style.background = "rgba(29,185,84," + (0.28 + 0.72 * frac).toFixed(2) + ")";
+      const pct = Math.round((0.28 + 0.72 * frac) * 100);
+      cell.style.background = "color-mix(in srgb, var(--accent) " + pct + "%, transparent)";
       if (frac >= 0.6) { cell.style.color = "#04130a"; }
     }
   });

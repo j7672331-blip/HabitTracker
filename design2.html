@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#c8102e">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="stylesheet" href="style-design2.css">
+  <title>Habit-Tracker — Design 2</title>
+</head>
+<body>
+  <main>
+    <!-- HEUTE -->
+    <section id="view-today" class="view">
+      <header class="masthead">
+        <p class="eyebrow" id="today-weekday">Heute</p>
+        <h1 class="date-display" id="today-date">—</h1>
+        <div class="progress-bar"><span id="today-bar"></span></div>
+        <p class="progress-line" id="today-progress"></p>
+      </header>
+      <div id="today-list"></div>
+    </section>
+
+    <!-- STATISTIK -->
+    <section id="view-stats" class="view hidden">
+      <h1>Statistik</h1>
+      <div id="stats-habit-select" class="chips"></div>
+      <div class="stat-cards">
+        <div class="stat-card"><span id="stat-current">0</span><label id="stat-l1">Aktuelle Serie</label></div>
+        <div class="stat-card"><span id="stat-longest">0</span><label id="stat-l2">Längste Serie</label></div>
+        <div class="stat-card"><span id="stat-rate">0%</span><label id="stat-l3">Erfolgsquote</label></div>
+      </div>
+      <div id="stat-range" class="chips">
+        <button data-range="7">7 Tage</button>
+        <button data-range="30" class="active">30 Tage</button>
+        <button data-range="0">Gesamt</button>
+      </div>
+      <div class="cal-head">
+        <button id="cal-prev" aria-label="Vorheriger Monat">‹</button>
+        <span id="cal-month"></span>
+        <button id="cal-next" aria-label="Nächster Monat">›</button>
+      </div>
+      <div id="cal-weekdays"><span>Mo</span><span>Di</span><span>Mi</span><span>Do</span><span>Fr</span><span>Sa</span><span>So</span></div>
+      <div id="heatmap"></div>
+    </section>
+
+    <!-- VERWALTEN -->
+    <section id="view-manage" class="view hidden">
+      <h1>Verwalten</h1>
+      <div class="new-habit">
+        <input id="new-name" type="text" placeholder="Name der Gewohnheit" maxlength="40">
+        <input id="new-info" type="text" placeholder="Zusatzinfo (optional)" maxlength="60">
+        <div class="new-habit-row">
+          <input id="new-color" type="color" value="#c8102e">
+          <button id="add-habit">Hinzufügen</button>
+        </div>
+      </div>
+      <div id="manage-list"></div>
+      <h2>Backup</h2>
+      <div class="backup">
+        <button id="export-btn">Exportieren</button>
+        <button id="import-btn">Importieren</button>
+        <input id="import-file" type="file" accept="application/json" hidden>
+      </div>
+    </section>
+  </main>
+
+  <nav class="tabbar">
+    <button class="tab active" data-view="today">Heute</button>
+    <button class="tab" data-view="stats">Statistik</button>
+    <button class="tab" data-view="manage">Verwalten</button>
+  </nav>
+
+  <script src="stats.js"></script>
+  <script src="storage.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
