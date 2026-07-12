@@ -10,6 +10,35 @@ const ACCENT_A = [0x2f, 0xc9, 0x6f]; // --accent-grad Start
 const ACCENT_B = [0x57, 0xe3, 0x9a]; // --accent-grad Ende
 const ON_ACCENT = [0x07, 0x16, 0x0d]; // --on-accent
 
+// Gleicher Verlauf wie body { background } in style.css:
+// linear-gradient(108deg, color-mix(accent 34%, paper) 0%,
+//   color-mix(accent 13%, paper) 32%, paper 62%, #070807 100%)
+const BG_ANGLE_DEG = 108;
+const BG_STOPS = [
+  [0.0, lerp3([0x0c, 0x0d, 0x0c], [0x34, 0xd1, 0x7a], 0.34)],
+  [0.32, lerp3([0x0c, 0x0d, 0x0c], [0x34, 0xd1, 0x7a], 0.13)],
+  [0.62, PAPER],
+  [1.0, [0x07, 0x08, 0x07]],
+];
+
+function lerp3(a, b, t) {
+  return [0, 1, 2].map(function (i) { return Math.round(a[i] + (b[i] - a[i]) * t); });
+}
+
+function bgColorAt(x, y, size) {
+  const rad = (BG_ANGLE_DEG * Math.PI) / 180;
+  const gx = Math.sin(rad), gy = -Math.cos(rad);
+  const half = (size / 2) * (Math.abs(gx) + Math.abs(gy));
+  const dx = x + 0.5 - size / 2, dy = y + 0.5 - size / 2;
+  const d = dx * gx + dy * gy;
+  const t = Math.max(0, Math.min(1, (d + half) / (2 * half)));
+  for (let i = 0; i < BG_STOPS.length - 1; i++) {
+    const [t0, c0] = BG_STOPS[i], [t1, c1] = BG_STOPS[i + 1];
+    if (t <= t1) { return lerp3(c0, c1, (t - t0) / (t1 - t0)); }
+  }
+  return BG_STOPS[BG_STOPS.length - 1][1];
+}
+
 function distToSegment(px, py, ax, ay, bx, by) {
   const abx = bx - ax, aby = by - ay;
   const apx = px - ax, apy = py - ay;
@@ -44,7 +73,7 @@ function makeIcon(size) {
         if (dseg <= stroke / 2) { col = ON_ACCENT; }
         else { col = lerp(ACCENT_A, ACCENT_B, (x + y) / (2 * size)); }
       } else {
-        col = PAPER;
+        col = bgColorAt(x, y, size);
       }
       const i = (y * size + x) * 3;
       buf[i] = col[0]; buf[i + 1] = col[1]; buf[i + 2] = col[2];
