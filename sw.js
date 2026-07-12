@@ -1,16 +1,15 @@
 "use strict";
-const CACHE = "habit-tracker-v7";
+const CACHE = "habit-tracker-v9";
 const ASSETS = [
   "./index.html",
   "./style.css",
-  "./design2.html",
-  "./style-design2.css",
   "./stats.js",
   "./storage.js",
   "./app.js",
   "./manifest.json",
   "./icons/icon-192.png",
-  "./icons/icon-512.png"
+  "./icons/icon-512.png",
+  "./fonts/SpaceGrotesk-Variable.woff2"
 ];
 
 self.addEventListener("install", function (e) {

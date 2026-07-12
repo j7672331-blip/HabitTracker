@@ -4,3 +4,6 @@ Thumbs.db
 .vscode/
 node_modules/
 previews/
+
+# Design-Handoff-Artefakt (kein App-Code)
+design_handoff_habit_tracker_redesign/

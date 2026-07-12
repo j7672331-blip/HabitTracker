@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#000000">
+  <meta name="theme-color" content="#0C0D0C">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
@@ -19,7 +19,10 @@
         <p class="eyebrow" id="today-weekday">Heute</p>
         <h1 class="date-display" id="today-date">—</h1>
         <div class="progress-bar"><span id="today-bar"></span></div>
-        <p class="progress-line" id="today-progress"></p>
+        <div class="progress-meta">
+          <p class="progress-line" id="today-progress"></p>
+          <span class="progress-pct" id="today-percent"></span>
+        </div>
       </header>
       <div id="today-list"></div>
     </section>
@@ -27,6 +30,11 @@
     <!-- STATISTIK -->
     <section id="view-stats" class="view hidden">
       <h1>Statistik</h1>
+      <div id="stats-mode" class="seg">
+        <button type="button" data-mode="all" class="active">Alle</button>
+        <button type="button" id="single-trigger" data-mode="single" aria-haspopup="listbox" aria-expanded="false"><span id="single-label">Einzelaktivität</span><span class="seg-caret"></span></button>
+        <div id="habit-menu" class="habit-menu" role="listbox" hidden></div>
+      </div>
       <div id="stats-habit-select" class="chips"></div>
       <div class="stat-cards">
         <div class="stat-card"><span id="stat-current">0</span><label id="stat-l1">Aktuelle Serie</label></div>
@@ -45,6 +53,12 @@
       </div>
       <div id="cal-weekdays"><span>Mo</span><span>Di</span><span>Mi</span><span>Do</span><span>Fr</span><span>Sa</span><span>So</span></div>
       <div id="heatmap"></div>
+      <div class="cal-legend">
+        <span>Anteil erledigt</span>
+        <span class="scale"><span class="sw sw0"></span><span class="sw sw1"></span><span class="sw sw2"></span><span class="sw sw3"></span></span>
+        <span class="spacer"></span>
+        <span class="today"></span><span>heute</span>
+      </div>
     </section>
 
     <!-- VERWALTEN -->
@@ -54,7 +68,8 @@
         <input id="new-name" type="text" placeholder="Name der Gewohnheit" maxlength="40">
         <input id="new-info" type="text" placeholder="Zusatzinfo (optional)" maxlength="60">
         <div class="new-habit-row">
-          <input id="new-color" type="color" value="#1db954">
+          <button type="button" id="color-trigger" class="color-trigger" aria-label="Farbe wählen" aria-haspopup="true" aria-expanded="false"></button>
+          <input id="new-color" type="color" value="#34D17A" hidden>
           <button id="add-habit">Hinzufügen</button>
         </div>
       </div>
@@ -77,5 +92,247 @@
   <script src="stats.js"></script>
   <script src="storage.js"></script>
   <script src="app.js"></script>
+  <script>
+  // Enhancer (ändert app.js NICHT): zeigt Prozent neben "x von y erledigt".
+  (function () {
+    var bar = document.getElementById('today-bar');
+    var line = document.getElementById('today-progress');
+    var pct = document.getElementById('today-percent');
+    if (!bar || !pct) { return; }
+    function upd() {
+      var n = parseInt(bar.style.width, 10);
+      if (isNaN(n)) { n = 0; }
+      var has = line && line.textContent.trim() !== '';
+      pct.textContent = has ? (n + ' %') : '';
+    }
+    new MutationObserver(upd).observe(bar, { attributes: true, attributeFilter: ['style'] });
+    if (line) { new MutationObserver(upd).observe(line, { childList: true, characterData: true, subtree: true }); }
+    upd();
+  })();
+
+  // Enhancer (ändert app.js NICHT): "Alle / Einzelaktivität" mit eigenem Overlay-Menü.
+  (function () {
+    var box = document.getElementById('stats-habit-select');
+    var seg = document.getElementById('stats-mode');
+    var trigger = document.getElementById('single-trigger');
+    var label = document.getElementById('single-label');
+    var menu = document.getElementById('habit-menu');
+    if (!box || !seg || !trigger || !menu) { return; }
+    var segAll = seg.querySelector('[data-mode="all"]');
+    function chips() { return Array.prototype.slice.call(box.querySelectorAll('button')); }
+    function habits() { try { return activeHabits(); } catch (e) { return []; } }
+    function activeIdx() {
+      var hc = chips().slice(1), idx = -1;
+      hc.forEach(function (c, i) { if (c.classList.contains('active')) { idx = i; } });
+      return idx;
+    }
+    function buildMenu() {
+      var hs = habits(), cur = activeIdx();
+      menu.innerHTML = '';
+      hs.forEach(function (h, i) {
+        var b = document.createElement('button'); b.type = 'button';
+        if (i === cur) { b.className = 'sel'; }
+        var dot = document.createElement('span'); dot.className = 'm-dot'; dot.style.background = h.farbe; dot.style.color = h.farbe;
+        var nm = document.createElement('span'); nm.className = 'm-name'; nm.textContent = h.name;
+        var ck = document.createElement('span'); ck.className = 'm-check';
+        b.appendChild(dot); b.appendChild(nm); b.appendChild(ck);
+        b.addEventListener('click', function (e) { e.stopPropagation(); var t = chips()[i + 1]; if (t) { t.click(); } close(); });
+        menu.appendChild(b);
+      });
+    }
+    function open() { buildMenu(); menu.hidden = false; trigger.setAttribute('aria-expanded', 'true'); }
+    function close() { menu.hidden = true; trigger.setAttribute('aria-expanded', 'false'); }
+    function sync() {
+      var cs = chips();
+      if (cs.length === 0) { seg.hidden = true; close(); return; }
+      seg.hidden = false;
+      var allActive = cs[0].classList.contains('active');
+      segAll.classList.toggle('active', allActive);
+      trigger.classList.toggle('active', !allActive);
+      var hs = habits(), idx = activeIdx();
+      label.textContent = (!allActive && idx >= 0 && hs[idx]) ? hs[idx].name : 'Einzelaktivität';
+      if (!menu.hidden) { buildMenu(); }
+    }
+    segAll.addEventListener('click', function () { close(); var c = chips()[0]; if (c) { c.click(); } });
+    trigger.addEventListener('click', function (e) { e.stopPropagation(); if (menu.hidden) { open(); } else { close(); } });
+    document.addEventListener('click', function (e) { if (!seg.contains(e.target)) { close(); } });
+    new MutationObserver(sync).observe(box, { childList: true });
+    sync();
+  })();
+
+  // Enhancer (ändert app.js NICHT): kompakter Farb-Trigger (in der Reihe mit "Hinzufügen") öffnet den vollen Farbwähler als Popover.
+  (function () {
+    var input = document.getElementById('new-color');
+    var trigger = document.getElementById('color-trigger');
+    var row = trigger ? trigger.closest('.new-habit-row') : null;
+    if (!input || !trigger || !row) { return; }
+    var pop, sv, svt, hue, preview, hexEl;
+    var H = 145, S = 0.6, V = 0.7, dragging = false;
+    function hsvToHex(h, s, v) {
+      var c = v * s, x = c * (1 - Math.abs((h / 60) % 2 - 1)), m = v - c, r = 0, g = 0, b = 0;
+      if (h < 60) { r = c; g = x; } else if (h < 120) { r = x; g = c; } else if (h < 180) { g = c; b = x; }
+      else if (h < 240) { g = x; b = c; } else if (h < 300) { r = x; b = c; } else { r = c; b = x; }
+      var th = function (n) { return ('0' + Math.round((n + m) * 255).toString(16)).slice(-2); };
+      return '#' + th(r) + th(g) + th(b);
+    }
+    function hexToHsv(hex) {
+      var mm = /^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(hex || '');
+      if (!mm) { return; }
+      var r = parseInt(mm[1], 16) / 255, g = parseInt(mm[2], 16) / 255, b = parseInt(mm[3], 16) / 255;
+      var mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn, h = 0;
+      if (d === 0) { h = 0; } else if (mx === r) { h = ((g - b) / d) % 6; } else if (mx === g) { h = (b - r) / d + 2; } else { h = (r - g) / d + 4; }
+      h = Math.round(h * 60); if (h < 0) { h += 360; }
+      H = h; S = mx === 0 ? 0 : d / mx; V = mx;
+    }
+    pop = document.createElement('div'); pop.className = 'color-pop'; pop.hidden = true;
+    sv = document.createElement('div'); sv.className = 'cp-sv';
+    svt = document.createElement('span'); svt.className = 'cp-sv-thumb'; sv.appendChild(svt);
+    hue = document.createElement('input'); hue.type = 'range'; hue.className = 'cp-hue'; hue.min = '0'; hue.max = '360'; hue.step = '1'; hue.setAttribute('aria-label', 'Farbton');
+    var foot = document.createElement('div'); foot.className = 'cp-foot';
+    preview = document.createElement('span'); preview.className = 'cp-preview';
+    hexEl = document.createElement('span'); hexEl.className = 'cp-hex';
+    var hexLabel = document.createElement('span'); hexLabel.className = 'cp-hex-label'; hexLabel.textContent = 'Farbe';
+    foot.appendChild(preview); foot.appendChild(hexEl); foot.appendChild(hexLabel);
+    pop.appendChild(sv); pop.appendChild(hue); pop.appendChild(foot);
+    document.body.appendChild(pop);
+    function paint() {
+      var val = hsvToHex(H, S, V);
+      input.value = val; trigger.style.background = val;
+      sv.style.background = 'linear-gradient(to top, #000, rgba(0,0,0,0)), linear-gradient(to right, #fff, hsl(' + H + ' 100% 50%))';
+      svt.style.left = (S * 100) + '%'; svt.style.top = ((1 - V) * 100) + '%'; svt.style.background = val;
+      preview.style.background = val; hexEl.textContent = val.toUpperCase();
+    }
+    function svSet(e) {
+      var r = sv.getBoundingClientRect();
+      var x = Math.min(Math.max(e.clientX - r.left, 0), r.width);
+      var y = Math.min(Math.max(e.clientY - r.top, 0), r.height);
+      S = r.width ? x / r.width : 0; V = r.height ? 1 - y / r.height : 0; paint();
+    }
+    sv.addEventListener('pointerdown', function (e) { e.preventDefault(); dragging = true; try { sv.setPointerCapture(e.pointerId); } catch (x) {} svSet(e); });
+    sv.addEventListener('pointermove', function (e) { if (dragging) { svSet(e); } });
+    sv.addEventListener('pointerup', function () { dragging = false; });
+    sv.addEventListener('pointercancel', function () { dragging = false; });
+    hue.addEventListener('input', function () { H = parseInt(hue.value, 10); paint(); });
+    function positionPop() {
+      var rowRect = row.getBoundingClientRect();
+      pop.style.position = 'fixed';
+      pop.style.left = rowRect.left + 'px';
+      pop.style.right = (window.innerWidth - rowRect.right) + 'px';
+      pop.style.bottom = 'auto';
+      pop.style.top = '-9999px';
+      pop.style.visibility = 'hidden';
+      var h = pop.offsetHeight;
+      var top = rowRect.top - 9 - h;
+      if (top < 8) { top = rowRect.bottom + 9; }
+      var maxTop = window.innerHeight - h - 8;
+      if (top > maxTop) { top = Math.max(8, maxTop); }
+      pop.style.top = top + 'px';
+      pop.style.visibility = '';
+    }
+    function openPop() { hexToHsv(input.value); hue.value = String(H); paint(); pop.hidden = false; trigger.setAttribute('aria-expanded', 'true'); positionPop(); }
+    function closePop() { pop.hidden = true; trigger.setAttribute('aria-expanded', 'false'); }
+    trigger.addEventListener('click', function (e) { e.stopPropagation(); if (pop.hidden) { openPop(); } else { closePop(); } });
+    document.addEventListener('click', function (e) { if (!row.contains(e.target) && !pop.contains(e.target)) { closePop(); } });
+    hexToHsv(input.value); trigger.style.background = input.value;
+  })();
+
+  // Enhancer (ändert app.js NICHT): Farb-Punkt in "Verwalten" öffnet denselben Farbwähler zum Ändern.
+  (function () {
+    var list = document.getElementById('manage-list');
+    if (!list) { return; }
+    var pop, sv, svt, hue, preview, hexEl, currentBtn;
+    var H = 145, S = 0.6, V = 0.7, dragging = false;
+    function hsvToHex(h, s, v) {
+      var c = v * s, x = c * (1 - Math.abs((h / 60) % 2 - 1)), m = v - c, r = 0, g = 0, b = 0;
+      if (h < 60) { r = c; g = x; } else if (h < 120) { r = x; g = c; } else if (h < 180) { g = c; b = x; }
+      else if (h < 240) { g = x; b = c; } else if (h < 300) { r = x; b = c; } else { r = c; b = x; }
+      var th = function (n) { return ('0' + Math.round((n + m) * 255).toString(16)).slice(-2); };
+      return '#' + th(r) + th(g) + th(b);
+    }
+    function hexToHsv(hex) {
+      var mm = /^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(hex || '');
+      if (!mm) { return; }
+      var r = parseInt(mm[1], 16) / 255, g = parseInt(mm[2], 16) / 255, b = parseInt(mm[3], 16) / 255;
+      var mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn, h = 0;
+      if (d === 0) { h = 0; } else if (mx === r) { h = ((g - b) / d) % 6; } else if (mx === g) { h = (b - r) / d + 2; } else { h = (r - g) / d + 4; }
+      h = Math.round(h * 60); if (h < 0) { h += 360; }
+      H = h; S = mx === 0 ? 0 : d / mx; V = mx;
+    }
+    function ensurePop() {
+      if (pop) { return; }
+      pop = document.createElement('div'); pop.className = 'color-pop'; pop.hidden = true;
+      sv = document.createElement('div'); sv.className = 'cp-sv';
+      svt = document.createElement('span'); svt.className = 'cp-sv-thumb'; sv.appendChild(svt);
+      hue = document.createElement('input'); hue.type = 'range'; hue.className = 'cp-hue'; hue.min = '0'; hue.max = '360'; hue.step = '1'; hue.setAttribute('aria-label', 'Farbton');
+      var foot = document.createElement('div'); foot.className = 'cp-foot';
+      preview = document.createElement('span'); preview.className = 'cp-preview';
+      hexEl = document.createElement('span'); hexEl.className = 'cp-hex';
+      var hexLabel = document.createElement('span'); hexLabel.className = 'cp-hex-label'; hexLabel.textContent = 'Farbe';
+      foot.appendChild(preview); foot.appendChild(hexEl); foot.appendChild(hexLabel);
+      pop.appendChild(sv); pop.appendChild(hue); pop.appendChild(foot);
+      function svSet(e) {
+        var r = sv.getBoundingClientRect();
+        var x = Math.min(Math.max(e.clientX - r.left, 0), r.width);
+        var y = Math.min(Math.max(e.clientY - r.top, 0), r.height);
+        S = r.width ? x / r.width : 0; V = r.height ? 1 - y / r.height : 0; paint();
+      }
+      sv.addEventListener('pointerdown', function (e) { e.preventDefault(); dragging = true; try { sv.setPointerCapture(e.pointerId); } catch (x) {} svSet(e); });
+      sv.addEventListener('pointermove', function (e) { if (dragging) { svSet(e); } });
+      sv.addEventListener('pointerup', function () { dragging = false; });
+      sv.addEventListener('pointercancel', function () { dragging = false; });
+      hue.addEventListener('input', function () { H = parseInt(hue.value, 10); paint(); });
+    }
+    function paint() {
+      var val = hsvToHex(H, S, V);
+      sv.style.background = 'linear-gradient(to top, #000, rgba(0,0,0,0)), linear-gradient(to right, #fff, hsl(' + H + ' 100% 50%))';
+      svt.style.left = (S * 100) + '%'; svt.style.top = ((1 - V) * 100) + '%'; svt.style.background = val;
+      preview.style.background = val; hexEl.textContent = val.toUpperCase();
+      if (currentBtn) {
+        currentBtn.style.background = val; currentBtn.dataset.color = val;
+        var id = currentBtn.dataset.habitId;
+        var h = state.habits.find(function (x) { return x.id === id; });
+        if (h) { updateHabit(state, id, h.name, val, h.info); saveData(state); }
+      }
+    }
+    function openFor(btn) {
+      ensurePop();
+      currentBtn = btn;
+      hexToHsv(btn.dataset.color); hue.value = String(H);
+      sv.style.background = 'linear-gradient(to top, #000, rgba(0,0,0,0)), linear-gradient(to right, #fff, hsl(' + H + ' 100% 50%))';
+      svt.style.left = (S * 100) + '%'; svt.style.top = ((1 - V) * 100) + '%'; svt.style.background = btn.dataset.color;
+      preview.style.background = btn.dataset.color; hexEl.textContent = (btn.dataset.color || '').toUpperCase();
+      var row = btn.closest('.manage-row');
+      document.body.appendChild(pop);
+      pop.hidden = false;
+      var rowRect = row.getBoundingClientRect();
+      pop.style.position = 'fixed';
+      pop.style.left = rowRect.left + 'px';
+      pop.style.right = (window.innerWidth - rowRect.right) + 'px';
+      pop.style.bottom = 'auto';
+      pop.style.top = '-9999px';
+      pop.style.visibility = 'hidden';
+      var h = pop.offsetHeight;
+      var top = rowRect.top - 9 - h;
+      if (top < 8) { top = rowRect.bottom + 9; }
+      var maxTop = window.innerHeight - h - 8;
+      if (top > maxTop) { top = Math.max(8, maxTop); }
+      pop.style.top = top + 'px';
+      pop.style.visibility = '';
+    }
+    function closePop() {
+      if (!pop || pop.hidden) { return; }
+      pop.hidden = true; currentBtn = null;
+    }
+    list.addEventListener('click', function (e) {
+      var btn = e.target.closest('.dot');
+      if (!btn) { return; }
+      e.stopPropagation();
+      if (pop && !pop.hidden && currentBtn === btn) { closePop(); } else { closePop(); openFor(btn); }
+    });
+    document.addEventListener('click', function (e) {
+      if (pop && !pop.hidden && !e.target.closest('.color-pop') && !e.target.closest('.dot')) { closePop(); }
+    });
+  })();
+  </script>
 </body>
 </html>

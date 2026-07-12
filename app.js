@@ -102,7 +102,7 @@ function renderManage() {
     const row = document.createElement("div");
     row.className = "manage-row";
     row.innerHTML =
-      '<span class="dot" style="background:' + escapeHtml(h.farbe) + '"></span>' +
+      '<button type="button" class="dot" data-habit-id="' + escapeHtml(h.id) + '" data-color="' + escapeHtml(h.farbe) + '" style="background:' + escapeHtml(h.farbe) + '" aria-label="Farbe ändern"></button>' +
       '<span class="name">' + escapeHtml(h.name) + (h.archiviert ? " (archiviert)" : "") +
         (h.info ? '<span class="manage-note">' + escapeHtml(h.info) + "</span>" : "") +
       "</span>";
@@ -118,10 +118,10 @@ function renderManage() {
       updateHabit(state, h.id, trimmed, h.farbe, info.trim()); saveData(state); renderManage();
     });
     const archiveBtn = document.createElement("button");
-    archiveBtn.textContent = h.archiviert ? "—" : "Archivieren";
-    archiveBtn.disabled = h.archiviert;
+    archiveBtn.textContent = h.archiviert ? "Reaktivieren" : "Archivieren";
     archiveBtn.addEventListener("click", function () {
-      archiveHabit(state, h.id); saveData(state); renderManage();
+      if (h.archiviert) { unarchiveHabit(state, h.id); } else { archiveHabit(state, h.id); }
+      saveData(state); renderManage();
     });
     const delBtn = document.createElement("button");
     delBtn.textContent = "Löschen";
@@ -274,6 +274,7 @@ function renderCalendar(habit, entries, today) {
 
 function renderCalendarCombined(habits, today) {
   monthGridScaffold(today, function (cell, key, future) {
+    if (key === today) { cell.classList.add("is-today"); }
     if (future) { return; }
     let existing = 0, done = 0;
     habits.forEach(function (h) {
@@ -285,9 +286,9 @@ function renderCalendarCombined(habits, today) {
     });
     if (existing > 0 && done > 0) {
       const frac = done / existing;
-      const pct = Math.round((0.28 + 0.72 * frac) * 100);
-      cell.style.background = "color-mix(in srgb, var(--accent) " + pct + "%, transparent)";
-      if (frac >= 0.6) { cell.style.color = "#04130a"; }
+      const level = frac >= 0.75 ? 3 : (frac >= 0.25 ? 2 : 1);
+      cell.classList.add("frac-" + level);
+      if (level >= 2) { cell.style.color = "#04130a"; }
     }
   });
 }

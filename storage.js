@@ -42,6 +42,12 @@ function archiveHabit(data, id) {
   return data;
 }
 
+function unarchiveHabit(data, id) {
+  const h = data.habits.find(function (x) { return x.id === id; });
+  if (h) { h.archiviert = false; }
+  return data;
+}
+
 function deleteHabit(data, id) {
   data.habits = data.habits.filter(function (x) { return x.id !== id; });
   delete data.eintraege[id];
