@@ -54,7 +54,7 @@
 }
 
 * { box-sizing: border-box; }
-html { -webkit-text-size-adjust: 100%; }
+html { -webkit-text-size-adjust: 100%; background: var(--paper); }
 
 /* Scrollbar: den breiten Standard-Balken ausblenden.
    iOS zeigt dann seinen eigenen kurzen, schwebenden Overlay-Indikator (wie im Referenzbild). */
