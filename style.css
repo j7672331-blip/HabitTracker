@@ -57,6 +57,7 @@
 html {
   -webkit-text-size-adjust: 100%;
   background: var(--paper);
+  overscroll-behavior-y: none;
 }
 
 /* Scrollbar: den breiten Standard-Balken ausblenden.
@@ -74,7 +75,7 @@ body {
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
   -webkit-tap-highlight-color: transparent;
-  overscroll-behavior-y: contain;
+  overscroll-behavior-y: none;
 }
 
 /* Echtes position:fixed statt background-attachment:fixed - WebKit
