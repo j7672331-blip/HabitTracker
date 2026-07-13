@@ -62,7 +62,7 @@ html {
       color-mix(in srgb, var(--accent) 13%, var(--paper)) 32%,
       var(--paper) 62%,
       #070807 100%);
-  background-attachment: fixed;
+  background-color: var(--paper);
 }
 
 /* Scrollbar: den breiten Standard-Balken ausblenden.
@@ -80,7 +80,7 @@ body {
       color-mix(in srgb, var(--accent) 13%, var(--paper)) 32%,
       var(--paper) 62%,
       #070807 100%);
-  background-attachment: fixed;
+  background-color: var(--paper);
   color: var(--ink);
   line-height: 1.5;
   padding-bottom: calc(4.6rem + var(--safe-bottom));
