@@ -56,13 +56,7 @@
 * { box-sizing: border-box; }
 html {
   -webkit-text-size-adjust: 100%;
-  background:
-    linear-gradient(108deg,
-      color-mix(in srgb, var(--accent) 34%, var(--paper)) 0%,
-      color-mix(in srgb, var(--accent) 13%, var(--paper)) 32%,
-      var(--paper) 62%,
-      #070807 100%);
-  background-color: var(--paper);
+  background: var(--paper);
 }
 
 /* Scrollbar: den breiten Standard-Balken ausblenden.
@@ -74,13 +68,6 @@ body {
   margin: 0;
   min-height: 100dvh;
   font-family: var(--sans);
-  background:
-    linear-gradient(108deg,
-      color-mix(in srgb, var(--accent) 34%, var(--paper)) 0%,
-      color-mix(in srgb, var(--accent) 13%, var(--paper)) 32%,
-      var(--paper) 62%,
-      #070807 100%);
-  background-color: var(--paper);
   color: var(--ink);
   line-height: 1.5;
   padding-bottom: calc(4.6rem + var(--safe-bottom));
@@ -88,6 +75,23 @@ body {
   text-rendering: optimizeLegibility;
   -webkit-tap-highlight-color: transparent;
   overscroll-behavior-y: contain;
+}
+
+/* Echtes position:fixed statt background-attachment:fixed - WebKit
+   pinnt fixed-Elemente waehrend des elastischen Overscroll-Bounces
+   zuverlaessig an den Viewport, die CSS-Background-Eigenschaft nicht
+   (bekannter iOS-Bug, malt sonst Weiss/Schwarz statt Verlauf). */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background:
+    linear-gradient(108deg,
+      color-mix(in srgb, var(--accent) 34%, var(--paper)) 0%,
+      color-mix(in srgb, var(--accent) 13%, var(--paper)) 32%,
+      var(--paper) 62%,
+      #070807 100%);
 }
 
 a { color: var(--accent); text-decoration: none; }
