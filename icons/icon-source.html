@@ -1,0 +1,53 @@
+<!--
+  Quelle fuer icon-192.png / icon-512.png.
+  Regenerieren: in einem Browser oeffnen, Viewport auf 512x512 (dann 192x192)
+  setzen, Screenshot des Viewports nehmen, als icons/icon-<size>.png speichern.
+  Danach CACHE-Version in sw.js bumpen.
+-->
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Unbounded:wght@800&display=swap');
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { width: 100%; height: 100%; overflow: hidden; }
+.icon {
+  position: relative;
+  width: 100vw; height: 100vh;
+  background: radial-gradient(circle at 82% 18%,
+    #123f26 0%, #0d2c1b 36%, #0C0D0C 72%, #0C0D0C 100%);
+}
+.txt {
+  position: absolute;
+  top: 50%; left: 50%;
+  font-family: 'Unbounded', sans-serif;
+  font-weight: 800;
+  font-size: 31.25vmin;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  white-space: nowrap;
+}
+.ghost {
+  transform: translate(-50%, -50%) translate(3.3203vmin, 2.5391vmin) skewX(-11deg);
+  color: #1c5c37;
+  filter: blur(0.293vmin);
+  opacity: 0.8;
+}
+.front {
+  transform: translate(-50%, -50%) skewX(-11deg);
+  background: linear-gradient(135deg, #6BEBA6 0%, #34D17A 55%, #22A65B 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 0 3.90625vmin rgba(52, 209, 122, 0.55));
+}
+</style>
+</head>
+<body>
+<div class="icon">
+  <span class="txt ghost">HT</span>
+  <span class="txt front">HT</span>
+</div>
+</body>
+</html>
