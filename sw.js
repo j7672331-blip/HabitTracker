@@ -1,5 +1,5 @@
 "use strict";
-const CACHE = "habit-tracker-v20";
+const CACHE = "habit-tracker-v21";
 const ASSETS = [
   "./index.html",
   "./style.css",

@@ -209,6 +209,60 @@ document.querySelectorAll(".tab").forEach(function (t) {
   t.addEventListener("click", function () { showView(t.dataset.view); });
 });
 
+// Echtes Touch-Drag per Pointer Events (natives HTML5-Drag&Drop funktioniert
+// auf iOS nicht zuverlaessig). Nur der gezogene Zeile bekommt eine transform-
+// Verschiebung, andere Zeilen bleiben stehen; die Zielposition wird beim
+// Loslassen anhand der Mittelpunkte der anderen Zeilen bestimmt.
+function setupRowDrag(handle, row, habit) {
+  let dragging = false;
+  let startY = 0;
+  let others = [];
+
+  function onMove(e) {
+    if (!dragging) { return; }
+    row.style.transform = "translateY(" + (e.clientY - startY) + "px)";
+  }
+
+  function onUp(e) {
+    if (!dragging) { return; }
+    dragging = false;
+    document.removeEventListener("pointermove", onMove);
+    document.removeEventListener("pointerup", onUp);
+    document.removeEventListener("pointercancel", onUp);
+    const finalRect = row.getBoundingClientRect();
+    const centerY = finalRect.top + finalRect.height / 2;
+    row.style.transform = "";
+    row.classList.remove("dragging");
+
+    let targetIdx = others.length;
+    for (let i = 0; i < others.length; i++) {
+      const r = others[i].getBoundingClientRect();
+      if (centerY < r.top + r.height / 2) { targetIdx = i; break; }
+    }
+    const fromIdx = state.habits.indexOf(habit);
+    if (fromIdx === -1) { return; }
+    state.habits.splice(fromIdx, 1);
+    state.habits.splice(targetIdx, 0, habit);
+    saveData(state);
+    renderManage();
+  }
+
+  handle.addEventListener("pointerdown", function (e) {
+    e.preventDefault();
+    dragging = true;
+    startY = e.clientY;
+    others = Array.prototype.filter.call(
+      document.querySelectorAll("#manage-list .manage-row"),
+      function (r) { return r !== row; }
+    );
+    row.classList.add("dragging");
+    try { handle.setPointerCapture(e.pointerId); } catch (err) { /* iOS Safari braucht das nicht zwingend */ }
+    document.addEventListener("pointermove", onMove);
+    document.addEventListener("pointerup", onUp);
+    document.addEventListener("pointercancel", onUp);
+  });
+}
+
 function renderManage() {
   const list = document.getElementById("manage-list");
   list.innerHTML = "";
@@ -220,23 +274,17 @@ function renderManage() {
       '<span class="name">' + escapeHtml(h.name) + (h.archiviert ? " (archiviert)" : "") +
         (h.info ? '<span class="manage-note">' + escapeHtml(h.info) + "</span>" : "") +
       "</span>";
-    const reorder = document.createElement("div");
-    reorder.className = "manage-reorder";
-    const upBtn = document.createElement("button");
-    upBtn.type = "button"; upBtn.textContent = "↑"; upBtn.setAttribute("aria-label", "Nach oben");
-    upBtn.disabled = idx === 0;
-    upBtn.addEventListener("click", function () {
-      moveHabit(state, h.id, -1); saveData(state); renderManage();
+    const handle = document.createElement("div");
+    handle.className = "drag-handle";
+    handle.tabIndex = 0;
+    handle.setAttribute("role", "button");
+    handle.setAttribute("aria-label", "Ziehen zum Verschieben (oder Pfeiltasten)");
+    handle.addEventListener("keydown", function (e) {
+      if (e.key === "ArrowUp") { e.preventDefault(); moveHabit(state, h.id, -1); saveData(state); renderManage(); }
+      else if (e.key === "ArrowDown") { e.preventDefault(); moveHabit(state, h.id, 1); saveData(state); renderManage(); }
     });
-    const downBtn = document.createElement("button");
-    downBtn.type = "button"; downBtn.textContent = "↓"; downBtn.setAttribute("aria-label", "Nach unten");
-    downBtn.disabled = idx === state.habits.length - 1;
-    downBtn.addEventListener("click", function () {
-      moveHabit(state, h.id, 1); saveData(state); renderManage();
-    });
-    reorder.appendChild(upBtn);
-    reorder.appendChild(downBtn);
-    row.prepend(reorder);
+    setupRowDrag(handle, row, h);
+    row.prepend(handle);
 
     const renameBtn = document.createElement("button");
     renameBtn.textContent = "Bearbeiten";
