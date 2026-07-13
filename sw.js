@@ -1,5 +1,5 @@
 "use strict";
-const CACHE = "habit-tracker-v14";
+const CACHE = "habit-tracker-v15";
 const ASSETS = [
   "./index.html",
   "./style.css",
@@ -27,10 +27,19 @@ self.addEventListener("activate", function (e) {
   self.clients.claim();
 });
 
+// Network-first: online immer frische Inhalte (Name/Updates zeigen sofort),
+// offline Fallback auf den Cache. Erfolgreiche GET-Antworten werden nachgecacht.
 self.addEventListener("fetch", function (e) {
+  if (e.request.method !== "GET") { return; }
   e.respondWith(
-    caches.match(e.request).then(function (hit) {
-      return hit || fetch(e.request);
+    fetch(e.request).then(function (res) {
+      if (res && res.ok) {
+        const copy = res.clone();
+        caches.open(CACHE).then(function (c) { c.put(e.request, copy); });
+      }
+      return res;
+    }).catch(function () {
+      return caches.match(e.request);
     })
   );
 });
