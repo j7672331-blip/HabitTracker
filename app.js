@@ -138,16 +138,29 @@ function openConfirmModal(message, onConfirm, opts) {
   });
 }
 
+function isDuplicateName(name, excludeId) {
+  const norm = name.trim().toLowerCase();
+  return state.habits.some(function (h) {
+    return h.id !== excludeId && h.name.trim().toLowerCase() === norm;
+  });
+}
+
 function openEditModal(habit) {
   openModal(function (modal, backdrop) {
     const h3 = document.createElement("h3");
     h3.textContent = "Gewohnheit bearbeiten";
-    const nameField = document.createElement("div");
-    nameField.className = "modal-field";
+    const nameRow = document.createElement("div");
+    nameRow.className = "modal-field modal-name-row";
     const nameInput = document.createElement("input");
     nameInput.type = "text"; nameInput.value = habit.name; nameInput.maxLength = 40;
     nameInput.placeholder = "Name der Gewohnheit";
-    nameField.appendChild(nameInput);
+    const colorInput = document.createElement("input");
+    colorInput.type = "color"; colorInput.value = habit.farbe;
+    colorInput.setAttribute("aria-label", "Farbe");
+    nameRow.appendChild(nameInput);
+    nameRow.appendChild(colorInput);
+    const errorP = document.createElement("p");
+    errorP.className = "modal-error";
     const infoField = document.createElement("div");
     infoField.className = "modal-field";
     const infoInput = document.createElement("input");
@@ -161,18 +174,25 @@ function openEditModal(habit) {
     const saveBtn = document.createElement("button");
     saveBtn.className = "modal-confirm"; saveBtn.textContent = "Speichern";
     actions.appendChild(cancelBtn); actions.appendChild(saveBtn);
-    modal.appendChild(h3); modal.appendChild(nameField); modal.appendChild(infoField); modal.appendChild(actions);
+    modal.appendChild(h3); modal.appendChild(nameRow); modal.appendChild(errorP);
+    modal.appendChild(infoField); modal.appendChild(actions);
 
     function save() {
       const trimmed = nameInput.value.trim();
       if (!trimmed) { nameInput.focus(); return; }
-      updateHabit(state, habit.id, trimmed, habit.farbe, infoInput.value.trim());
+      if (isDuplicateName(trimmed, habit.id)) {
+        errorP.textContent = 'Es gibt bereits eine Gewohnheit namens "' + trimmed + '".';
+        nameInput.focus();
+        return;
+      }
+      updateHabit(state, habit.id, trimmed, colorInput.value, infoInput.value.trim());
       saveData(state);
       closeModal(backdrop);
       renderManage();
     }
     cancelBtn.addEventListener("click", function () { closeModal(backdrop); });
     saveBtn.addEventListener("click", save);
+    nameInput.addEventListener("input", function () { errorP.textContent = ""; });
     nameInput.addEventListener("keydown", function (e) { if (e.key === "Enter") { save(); } });
     infoInput.addEventListener("keydown", function (e) { if (e.key === "Enter") { save(); } });
     nameInput.focus();
@@ -210,17 +230,32 @@ document.querySelectorAll(".tab").forEach(function (t) {
 });
 
 // Echtes Touch-Drag per Pointer Events (natives HTML5-Drag&Drop funktioniert
-// auf iOS nicht zuverlaessig). Nur der gezogene Zeile bekommt eine transform-
-// Verschiebung, andere Zeilen bleiben stehen; die Zielposition wird beim
-// Loslassen anhand der Mittelpunkte der anderen Zeilen bestimmt.
+// auf iOS nicht zuverlaessig). Die gezogene Zeile folgt 1:1 dem Finger (keine
+// Transition), andere Zeilen ruecken live per CSS-Transform Platz - sobald
+// die gezogene Zeile ihren urspruenglichen Mittelpunkt ueberquert hat.
+// Beim Loslassen wird anhand der ORIGINALEN Mittelpunkte (nicht der gerade
+// mitten in der Animation befindlichen) die Zielposition bestimmt und die
+// Liste einmal komplett neu gerendert.
 function setupRowDrag(handle, row, habit) {
   let dragging = false;
   let startY = 0;
+  let startCenter = 0;
+  let rowHeight = 0;
   let others = [];
+  let origCenters = [];
 
   function onMove(e) {
     if (!dragging) { return; }
-    row.style.transform = "translateY(" + (e.clientY - startY) + "px)";
+    const dy = e.clientY - startY;
+    row.style.transform = "translateY(" + dy + "px)";
+    const draggedCenter = startCenter + dy;
+    others.forEach(function (r, i) {
+      const oc = origCenters[i];
+      let shift = 0;
+      if (dy > 0 && draggedCenter > oc && oc > startCenter) { shift = -rowHeight; }
+      else if (dy < 0 && draggedCenter < oc && oc < startCenter) { shift = rowHeight; }
+      r.style.transform = shift ? "translateY(" + shift + "px)" : "";
+    });
   }
 
   function onUp(e) {
@@ -229,15 +264,12 @@ function setupRowDrag(handle, row, habit) {
     document.removeEventListener("pointermove", onMove);
     document.removeEventListener("pointerup", onUp);
     document.removeEventListener("pointercancel", onUp);
-    const finalRect = row.getBoundingClientRect();
-    const centerY = finalRect.top + finalRect.height / 2;
-    row.style.transform = "";
-    row.classList.remove("dragging");
+    const dy = e.clientY - startY;
+    const finalCenter = startCenter + dy;
 
     let targetIdx = others.length;
     for (let i = 0; i < others.length; i++) {
-      const r = others[i].getBoundingClientRect();
-      if (centerY < r.top + r.height / 2) { targetIdx = i; break; }
+      if (finalCenter < origCenters[i]) { targetIdx = i; break; }
     }
     const fromIdx = state.habits.indexOf(habit);
     if (fromIdx === -1) { return; }
@@ -251,10 +283,18 @@ function setupRowDrag(handle, row, habit) {
     e.preventDefault();
     dragging = true;
     startY = e.clientY;
+    const rowRect = row.getBoundingClientRect();
+    startCenter = rowRect.top + rowRect.height / 2;
+    rowHeight = rowRect.height;
+    row.style.transition = "none";
     others = Array.prototype.filter.call(
       document.querySelectorAll("#manage-list .manage-row"),
       function (r) { return r !== row; }
     );
+    origCenters = others.map(function (r) {
+      const rc = r.getBoundingClientRect();
+      return rc.top + rc.height / 2;
+    });
     row.classList.add("dragging");
     try { handle.setPointerCapture(e.pointerId); } catch (err) { /* iOS Safari braucht das nicht zwingend */ }
     document.addEventListener("pointermove", onMove);
@@ -498,6 +538,10 @@ document.getElementById("add-habit").addEventListener("click", function () {
   const farbe = document.getElementById("new-color").value;
   const info = document.getElementById("new-info").value.trim();
   if (!name) { return; }
+  if (isDuplicateName(name)) {
+    showToast('Es gibt bereits eine Gewohnheit namens "' + name + '".', { error: true });
+    return;
+  }
   createHabit(state, name, farbe, todayKey(), info);
   saveData(state);
   document.getElementById("new-name").value = "";
