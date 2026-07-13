@@ -89,6 +89,107 @@ function escapeHtml(s) {
   });
 }
 
+// ---------- Modale Dialoge (ersetzen native prompt/confirm/alert) ----------
+function closeModal(backdrop) {
+  backdrop.classList.remove("show");
+  document.removeEventListener("keydown", backdrop._onKey);
+  setTimeout(function () { backdrop.remove(); }, 160);
+}
+
+function openModal(buildFn) {
+  const backdrop = document.createElement("div");
+  backdrop.className = "modal-backdrop";
+  const modal = document.createElement("div");
+  modal.className = "modal";
+  backdrop.appendChild(modal);
+  document.body.appendChild(backdrop);
+  requestAnimationFrame(function () { backdrop.classList.add("show"); });
+  backdrop.addEventListener("click", function (e) {
+    if (e.target === backdrop) { closeModal(backdrop); }
+  });
+  backdrop._onKey = function (e) { if (e.key === "Escape") { closeModal(backdrop); } };
+  document.addEventListener("keydown", backdrop._onKey);
+  buildFn(modal, backdrop);
+  return backdrop;
+}
+
+function openConfirmModal(message, onConfirm, opts) {
+  opts = opts || {};
+  openModal(function (modal, backdrop) {
+    const p = document.createElement("p");
+    p.textContent = message;
+    const actions = document.createElement("div");
+    actions.className = "modal-actions";
+    const cancelBtn = document.createElement("button");
+    cancelBtn.className = "modal-cancel";
+    cancelBtn.textContent = "Abbrechen";
+    const confirmBtn = document.createElement("button");
+    confirmBtn.className = opts.danger ? "modal-danger" : "modal-confirm";
+    confirmBtn.textContent = opts.confirmLabel || "OK";
+    actions.appendChild(cancelBtn);
+    actions.appendChild(confirmBtn);
+    modal.appendChild(p);
+    modal.appendChild(actions);
+    cancelBtn.addEventListener("click", function () { closeModal(backdrop); });
+    confirmBtn.addEventListener("click", function () { closeModal(backdrop); onConfirm(); });
+    confirmBtn.focus();
+  });
+}
+
+function openEditModal(habit) {
+  openModal(function (modal, backdrop) {
+    const h3 = document.createElement("h3");
+    h3.textContent = "Gewohnheit bearbeiten";
+    const nameField = document.createElement("div");
+    nameField.className = "modal-field";
+    const nameInput = document.createElement("input");
+    nameInput.type = "text"; nameInput.value = habit.name; nameInput.maxLength = 40;
+    nameInput.placeholder = "Name der Gewohnheit";
+    nameField.appendChild(nameInput);
+    const infoField = document.createElement("div");
+    infoField.className = "modal-field";
+    const infoInput = document.createElement("input");
+    infoInput.type = "text"; infoInput.value = habit.info || ""; infoInput.maxLength = 60;
+    infoInput.placeholder = "Zusatzinfo (optional)";
+    infoField.appendChild(infoInput);
+    const actions = document.createElement("div");
+    actions.className = "modal-actions";
+    const cancelBtn = document.createElement("button");
+    cancelBtn.className = "modal-cancel"; cancelBtn.textContent = "Abbrechen";
+    const saveBtn = document.createElement("button");
+    saveBtn.className = "modal-confirm"; saveBtn.textContent = "Speichern";
+    actions.appendChild(cancelBtn); actions.appendChild(saveBtn);
+    modal.appendChild(h3); modal.appendChild(nameField); modal.appendChild(infoField); modal.appendChild(actions);
+
+    function save() {
+      const trimmed = nameInput.value.trim();
+      if (!trimmed) { nameInput.focus(); return; }
+      updateHabit(state, habit.id, trimmed, habit.farbe, infoInput.value.trim());
+      saveData(state);
+      closeModal(backdrop);
+      renderManage();
+    }
+    cancelBtn.addEventListener("click", function () { closeModal(backdrop); });
+    saveBtn.addEventListener("click", save);
+    nameInput.addEventListener("keydown", function (e) { if (e.key === "Enter") { save(); } });
+    infoInput.addEventListener("keydown", function (e) { if (e.key === "Enter") { save(); } });
+    nameInput.focus();
+    nameInput.select();
+  });
+}
+
+function showToast(message, isError) {
+  const t = document.createElement("div");
+  t.className = "toast" + (isError ? " toast-error" : "");
+  t.textContent = message;
+  document.body.appendChild(t);
+  requestAnimationFrame(function () { t.classList.add("show"); });
+  setTimeout(function () {
+    t.classList.remove("show");
+    setTimeout(function () { t.remove(); }, 220);
+  }, 2200);
+}
+
 // Tab-Verdrahtung
 document.querySelectorAll(".tab").forEach(function (t) {
   t.addEventListener("click", function () { showView(t.dataset.view); });
@@ -109,13 +210,7 @@ function renderManage() {
     const renameBtn = document.createElement("button");
     renameBtn.textContent = "Bearbeiten";
     renameBtn.addEventListener("click", function () {
-      const name = prompt("Name:", h.name);
-      if (name === null) { return; }
-      const trimmed = name.trim();
-      if (!trimmed) { return; }
-      const info = prompt("Zusatzinfo (kann leer sein):", h.info || "");
-      if (info === null) { return; }
-      updateHabit(state, h.id, trimmed, h.farbe, info.trim()); saveData(state); renderManage();
+      openEditModal(h);
     });
     const archiveBtn = document.createElement("button");
     archiveBtn.textContent = h.archiviert ? "Reaktivieren" : "Archivieren";
@@ -126,9 +221,9 @@ function renderManage() {
     const delBtn = document.createElement("button");
     delBtn.textContent = "Löschen";
     delBtn.addEventListener("click", function () {
-      if (confirm('"' + h.name + '" und alle Einträge wirklich löschen?')) {
+      openConfirmModal('"' + h.name + '" und alle Einträge wirklich löschen?', function () {
         deleteHabit(state, h.id); saveData(state); renderManage();
-      }
+      }, { danger: true, confirmLabel: "Löschen" });
     });
     row.appendChild(renameBtn);
     row.appendChild(archiveBtn);
@@ -327,9 +422,9 @@ document.getElementById("import-file").addEventListener("change", function (ev) 
     try {
       state = importJson(reader.result);
       render();
-      alert("Backup importiert.");
+      showToast("Backup importiert.");
     } catch (e) {
-      alert("Datei konnte nicht gelesen werden.");
+      showToast("Datei konnte nicht gelesen werden.", true);
     }
     ev.target.value = "";
   };
