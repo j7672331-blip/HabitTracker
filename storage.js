@@ -48,6 +48,16 @@ function unarchiveHabit(data, id) {
   return data;
 }
 
+function moveHabit(data, id, dir) {
+  const idx = data.habits.findIndex(function (x) { return x.id === id; });
+  const swapIdx = idx + dir;
+  if (idx < 0 || swapIdx < 0 || swapIdx >= data.habits.length) { return data; }
+  const tmp = data.habits[idx];
+  data.habits[idx] = data.habits[swapIdx];
+  data.habits[swapIdx] = tmp;
+  return data;
+}
+
 function deleteHabit(data, id) {
   data.habits = data.habits.filter(function (x) { return x.id !== id; });
   delete data.eintraege[id];

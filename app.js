@@ -57,6 +57,7 @@ function renderToday() {
     const done = !!entries[today];
     if (done) { doneCount++; }
     const info = h.info || "";
+    const streak = currentStreak(entries, today);
     const row = document.createElement("button");
     row.className = "habit-row" + (done ? " done" : "");
     row.style.setProperty("--c", h.farbe);
@@ -66,6 +67,7 @@ function renderToday() {
         '<span class="habit-name">' + escapeHtml(h.name) + "</span>" +
         (info ? '<span class="habit-note">' + escapeHtml(info) + "</span>" : "") +
       "</span>" +
+      (streak > 1 ? '<span class="habit-streak">' + streak + '</span>' : "") +
       '<span class="habit-mark"></span>';
     row.addEventListener("click", function () {
       toggleEntry(state, h.id, today);
@@ -178,16 +180,28 @@ function openEditModal(habit) {
   });
 }
 
-function showToast(message, isError) {
+function showToast(message, opts) {
+  opts = opts === true ? { error: true } : (opts || {});
   const t = document.createElement("div");
-  t.className = "toast" + (isError ? " toast-error" : "");
-  t.textContent = message;
-  document.body.appendChild(t);
-  requestAnimationFrame(function () { t.classList.add("show"); });
-  setTimeout(function () {
+  t.className = "toast" + (opts.error ? " toast-error" : "");
+  const span = document.createElement("span");
+  span.textContent = message;
+  t.appendChild(span);
+  function hide() {
     t.classList.remove("show");
     setTimeout(function () { t.remove(); }, 220);
-  }, 2200);
+  }
+  if (opts.actionLabel && opts.onAction) {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "toast-action";
+    btn.textContent = opts.actionLabel;
+    btn.addEventListener("click", function () { opts.onAction(); hide(); });
+    t.appendChild(btn);
+  }
+  document.body.appendChild(t);
+  requestAnimationFrame(function () { t.classList.add("show"); });
+  setTimeout(hide, opts.duration || 2200);
 }
 
 // Tab-Verdrahtung
@@ -195,11 +209,10 @@ document.querySelectorAll(".tab").forEach(function (t) {
   t.addEventListener("click", function () { showView(t.dataset.view); });
 });
 
-// Platzhalter, in Task 10/11 implementiert
 function renderManage() {
   const list = document.getElementById("manage-list");
   list.innerHTML = "";
-  state.habits.forEach(function (h) {
+  state.habits.forEach(function (h, idx) {
     const row = document.createElement("div");
     row.className = "manage-row";
     row.innerHTML =
@@ -207,6 +220,24 @@ function renderManage() {
       '<span class="name">' + escapeHtml(h.name) + (h.archiviert ? " (archiviert)" : "") +
         (h.info ? '<span class="manage-note">' + escapeHtml(h.info) + "</span>" : "") +
       "</span>";
+    const reorder = document.createElement("div");
+    reorder.className = "manage-reorder";
+    const upBtn = document.createElement("button");
+    upBtn.type = "button"; upBtn.textContent = "↑"; upBtn.setAttribute("aria-label", "Nach oben");
+    upBtn.disabled = idx === 0;
+    upBtn.addEventListener("click", function () {
+      moveHabit(state, h.id, -1); saveData(state); renderManage();
+    });
+    const downBtn = document.createElement("button");
+    downBtn.type = "button"; downBtn.textContent = "↓"; downBtn.setAttribute("aria-label", "Nach unten");
+    downBtn.disabled = idx === state.habits.length - 1;
+    downBtn.addEventListener("click", function () {
+      moveHabit(state, h.id, 1); saveData(state); renderManage();
+    });
+    reorder.appendChild(upBtn);
+    reorder.appendChild(downBtn);
+    row.prepend(reorder);
+
     const renameBtn = document.createElement("button");
     renameBtn.textContent = "Bearbeiten";
     renameBtn.addEventListener("click", function () {
@@ -222,7 +253,19 @@ function renderManage() {
     delBtn.textContent = "Löschen";
     delBtn.addEventListener("click", function () {
       openConfirmModal('"' + h.name + '" und alle Einträge wirklich löschen?', function () {
+        const habitBackup = h;
+        const entriesBackup = state.eintraege[h.id];
+        const idxBackup = state.habits.indexOf(h);
         deleteHabit(state, h.id); saveData(state); renderManage();
+        showToast('"' + h.name + '" gelöscht.', {
+          actionLabel: "Rückgängig",
+          duration: 4500,
+          onAction: function () {
+            state.habits.splice(idxBackup, 0, habitBackup);
+            if (entriesBackup) { state.eintraege[habitBackup.id] = entriesBackup; }
+            saveData(state); renderManage();
+          },
+        });
       }, { danger: true, confirmLabel: "Löschen" });
     });
     row.appendChild(renameBtn);
@@ -230,6 +273,20 @@ function renderManage() {
     row.appendChild(delBtn);
     list.appendChild(row);
   });
+  renderBackupHint();
+}
+
+function renderBackupHint() {
+  const hint = document.getElementById("backup-hint");
+  if (!hint) { return; }
+  if (state.habits.length === 0) { hint.textContent = ""; return; }
+  const last = localStorage.getItem("habitTrackerLastExport");
+  if (!last) {
+    hint.textContent = "Noch kein Backup exportiert.";
+    return;
+  }
+  const days = Math.round((new Date(todayKey()) - new Date(last)) / 86400000);
+  hint.textContent = days >= 14 ? "Letztes Backup vor " + days + " Tagen — Zeit für ein neues." : "";
 }
 function renderStats() {
   const habits = activeHabits();
@@ -408,6 +465,8 @@ document.getElementById("export-btn").addEventListener("click", function () {
   a.download = "habit-tracker-backup-" + todayKey() + ".json";
   a.click();
   URL.revokeObjectURL(url);
+  localStorage.setItem("habitTrackerLastExport", todayKey());
+  renderBackupHint();
 });
 
 document.getElementById("import-btn").addEventListener("click", function () {
