@@ -242,8 +242,8 @@
   (function () {
     var list = document.getElementById('manage-list');
     if (!list) { return; }
-    var pop, sv, svt, hue, preview, hexEl, currentBtn;
-    var H = 145, S = 0.6, V = 0.7, dragging = false;
+    var pop, sv, svt, hue, preview, hexEl, confirmBtn, cancelBtn, currentBtn;
+    var H = 145, S = 0.6, V = 0.7, dragging = false, origColor = '';
     function hsvToHex(h, s, v) {
       var c = v * s, x = c * (1 - Math.abs((h / 60) % 2 - 1)), m = v - c, r = 0, g = 0, b = 0;
       if (h < 60) { r = c; g = x; } else if (h < 120) { r = x; g = c; } else if (h < 180) { g = c; b = x; }
@@ -271,7 +271,13 @@
       hexEl = document.createElement('span'); hexEl.className = 'cp-hex';
       var hexLabel = document.createElement('span'); hexLabel.className = 'cp-hex-label'; hexLabel.textContent = 'Farbe';
       foot.appendChild(preview); foot.appendChild(hexEl); foot.appendChild(hexLabel);
-      pop.appendChild(sv); pop.appendChild(hue); pop.appendChild(foot);
+      var actions = document.createElement('div'); actions.className = 'cp-actions';
+      cancelBtn = document.createElement('button'); cancelBtn.type = 'button'; cancelBtn.className = 'cp-cancel'; cancelBtn.textContent = 'Abbrechen';
+      confirmBtn = document.createElement('button'); confirmBtn.type = 'button'; confirmBtn.className = 'cp-confirm'; confirmBtn.textContent = 'Übernehmen';
+      actions.appendChild(cancelBtn); actions.appendChild(confirmBtn);
+      pop.appendChild(sv); pop.appendChild(hue); pop.appendChild(foot); pop.appendChild(actions);
+      cancelBtn.addEventListener('click', function (e) { e.stopPropagation(); cancelPop(); });
+      confirmBtn.addEventListener('click', function (e) { e.stopPropagation(); confirmPop(); });
       function svSet(e) {
         var r = sv.getBoundingClientRect();
         var x = Math.min(Math.max(e.clientX - r.left, 0), r.width);
@@ -291,14 +297,24 @@
       preview.style.background = val; hexEl.textContent = val.toUpperCase();
       if (currentBtn) {
         currentBtn.style.background = val; currentBtn.dataset.color = val;
+      }
+    }
+    function cancelPop() {
+      if (currentBtn) { currentBtn.style.background = origColor; currentBtn.dataset.color = origColor; }
+      closePop();
+    }
+    function confirmPop() {
+      if (currentBtn) {
         var id = currentBtn.dataset.habitId;
         var h = state.habits.find(function (x) { return x.id === id; });
-        if (h) { updateHabit(state, id, h.name, val, h.info); saveData(state); }
+        if (h) { updateHabit(state, id, h.name, currentBtn.dataset.color, h.info); saveData(state); }
       }
+      closePop();
     }
     function openFor(btn) {
       ensurePop();
       currentBtn = btn;
+      origColor = btn.dataset.color;
       hexToHsv(btn.dataset.color); hue.value = String(H);
       sv.style.background = 'linear-gradient(to top, #000, rgba(0,0,0,0)), linear-gradient(to right, #fff, hsl(' + H + ' 100% 50%))';
       svt.style.left = (S * 100) + '%'; svt.style.top = ((1 - V) * 100) + '%'; svt.style.background = btn.dataset.color;
@@ -329,10 +345,10 @@
       var btn = e.target.closest('.dot');
       if (!btn) { return; }
       e.stopPropagation();
-      if (pop && !pop.hidden && currentBtn === btn) { closePop(); } else { closePop(); openFor(btn); }
+      if (pop && !pop.hidden && currentBtn === btn) { cancelPop(); } else { cancelPop(); openFor(btn); }
     });
     document.addEventListener('click', function (e) {
-      if (pop && !pop.hidden && !e.target.closest('.color-pop') && !e.target.closest('.dot')) { closePop(); }
+      if (pop && !pop.hidden && !e.target.closest('.color-pop') && !e.target.closest('.dot')) { cancelPop(); }
     });
   })();
   </script>
