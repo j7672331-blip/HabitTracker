@@ -54,7 +54,16 @@
 }
 
 * { box-sizing: border-box; }
-html { -webkit-text-size-adjust: 100%; background: var(--paper); }
+html {
+  -webkit-text-size-adjust: 100%;
+  background:
+    linear-gradient(108deg,
+      color-mix(in srgb, var(--accent) 34%, var(--paper)) 0%,
+      color-mix(in srgb, var(--accent) 13%, var(--paper)) 32%,
+      var(--paper) 62%,
+      #070807 100%);
+  background-attachment: fixed;
+}
 
 /* Scrollbar: den breiten Standard-Balken ausblenden.
    iOS zeigt dann seinen eigenen kurzen, schwebenden Overlay-Indikator (wie im Referenzbild). */
