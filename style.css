@@ -112,7 +112,7 @@ main {
   /* Extra Puffer am Ende jeder Ansicht, damit man bei viel Inhalt noch etwas
      weiter scrollen kann statt dass die letzte Zeile/das Diagramm direkt an
      der Tabbar-Freistellung endet. */
-  padding-bottom: 2.5rem;
+  padding-bottom: 4.5rem;
   padding-left: calc(var(--safe-left) + clamp(1.15rem, 5vw, 1.5rem));
 }
 
