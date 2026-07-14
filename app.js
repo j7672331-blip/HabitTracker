@@ -48,15 +48,13 @@ function renderToday() {
     progress.textContent = "";
     progress.classList.remove("complete");
     bar.style.width = "0%";
-    list.innerHTML = '<p class="empty">Noch keine Gewohnheiten.</p>';
-    list.appendChild(buildQuickAddRow());
+    list.innerHTML = '<p class="empty">Noch keine Gewohnheiten. Lege unter „Verwalten" eine an.</p>';
     return;
   }
 
   habits.forEach(function (h) {
     list.appendChild(buildHabitRow(h, today));
   });
-  list.appendChild(buildQuickAddRow());
 
   updateTodayProgress(habits, today);
 }
@@ -119,15 +117,6 @@ function updateTodayProgress(habits, today) {
   progress.textContent = all
     ? "Für heute erledigt."
     : doneCount + " von " + habits.length + " erledigt";
-}
-
-function buildQuickAddRow() {
-  const btn = document.createElement("button");
-  btn.type = "button";
-  btn.className = "today-add-row";
-  btn.textContent = "+ Gewohnheit hinzufügen";
-  btn.addEventListener("click", function () { openAddModal(renderToday); });
-  return btn;
 }
 
 function escapeHtml(s) {
@@ -242,60 +231,6 @@ function openEditModal(habit) {
     infoInput.addEventListener("keydown", function (e) { if (e.key === "Enter") { save(); } });
     nameInput.focus();
     nameInput.select();
-  });
-}
-
-function openAddModal(onDone) {
-  openModal(function (modal, backdrop) {
-    const h3 = document.createElement("h3");
-    h3.textContent = "Neue Gewohnheit";
-    const nameRow = document.createElement("div");
-    nameRow.className = "modal-field modal-name-row";
-    const nameInput = document.createElement("input");
-    nameInput.type = "text"; nameInput.maxLength = 40;
-    nameInput.placeholder = "Name der Gewohnheit";
-    const colorInput = document.createElement("input");
-    colorInput.type = "color"; colorInput.value = "#34D17A";
-    colorInput.setAttribute("aria-label", "Farbe");
-    nameRow.appendChild(nameInput);
-    nameRow.appendChild(colorInput);
-    const errorP = document.createElement("p");
-    errorP.className = "modal-error";
-    const infoField = document.createElement("div");
-    infoField.className = "modal-field";
-    const infoInput = document.createElement("input");
-    infoInput.type = "text"; infoInput.maxLength = 60;
-    infoInput.placeholder = "Zusatzinfo (optional)";
-    infoField.appendChild(infoInput);
-    const actions = document.createElement("div");
-    actions.className = "modal-actions";
-    const cancelBtn = document.createElement("button");
-    cancelBtn.className = "modal-cancel"; cancelBtn.textContent = "Abbrechen";
-    const saveBtn = document.createElement("button");
-    saveBtn.className = "modal-confirm"; saveBtn.textContent = "Hinzufügen";
-    actions.appendChild(cancelBtn); actions.appendChild(saveBtn);
-    modal.appendChild(h3); modal.appendChild(nameRow); modal.appendChild(errorP);
-    modal.appendChild(infoField); modal.appendChild(actions);
-
-    function save() {
-      const trimmed = nameInput.value.trim();
-      if (!trimmed) { nameInput.focus(); return; }
-      if (isDuplicateName(trimmed)) {
-        errorP.textContent = 'Es gibt bereits eine Gewohnheit namens "' + trimmed + '".';
-        nameInput.focus();
-        return;
-      }
-      createHabit(state, trimmed, colorInput.value, todayKey(), infoInput.value.trim());
-      saveData(state);
-      closeModal(backdrop);
-      onDone();
-    }
-    cancelBtn.addEventListener("click", function () { closeModal(backdrop); });
-    saveBtn.addEventListener("click", save);
-    nameInput.addEventListener("input", function () { errorP.textContent = ""; });
-    nameInput.addEventListener("keydown", function (e) { if (e.key === "Enter") { save(); } });
-    infoInput.addEventListener("keydown", function (e) { if (e.key === "Enter") { save(); } });
-    nameInput.focus();
   });
 }
 

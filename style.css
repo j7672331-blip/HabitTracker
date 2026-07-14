@@ -255,26 +255,6 @@ h2 {
 .habit-row:active { background: var(--surface-2); }
 .habit-row:active .habit-mark { transform: scale(0.92); }
 
-.today-add-row {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.4rem;
-  width: 100%;
-  padding: 0.95rem 1.15rem;
-  background: none;
-  border: none;
-  border-top: 1px solid var(--line-soft);
-  font: inherit;
-  font-weight: 600;
-  font-size: 0.92rem;
-  color: var(--accent-2);
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-  transition: background 200ms var(--ease);
-}
-.today-add-row:active { background: var(--surface-2); }
-
 .habit-dot {
   width: 10px;
   height: 10px;
