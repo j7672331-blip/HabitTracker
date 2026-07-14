@@ -15,10 +15,10 @@ html, body { width: 100%; height: 100%; overflow: hidden; }
 .icon {
   position: relative;
   width: 100vw; height: 100vh;
-  /* Gleiche Richtung wie App-Hintergrund (108deg), aber kräftigerer/weiter reichender
-     Grün-Anteil als die App-Wash — Icon ist klein, braucht mehr Farbe zum Erkennen. */
+  /* 1:1 gleiche Richtung + Farbformel wie App-Hintergrund (style.css body::before):
+     color-mix(accent 34%/13%, paper) auf linear-gradient(108deg, ...). */
   background: linear-gradient(108deg,
-    #206F43 0%, #163E28 45%, #0C0D0C 75%, #070807 100%);
+    #1A5031 0%, #11261A 32%, #0C0D0C 62%, #070807 100%);
 }
 .txt {
   position: absolute;
