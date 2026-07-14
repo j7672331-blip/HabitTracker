@@ -109,7 +109,10 @@ main {
   margin: 0 auto;
   padding-top: calc(var(--safe-top) + clamp(1.35rem, 4.5vw, 2rem));
   padding-right: calc(var(--safe-right) + clamp(1.15rem, 5vw, 1.5rem));
-  padding-bottom: 0;
+  /* Extra Puffer am Ende jeder Ansicht, damit man bei viel Inhalt noch etwas
+     weiter scrollen kann statt dass die letzte Zeile/das Diagramm direkt an
+     der Tabbar-Freistellung endet. */
+  padding-bottom: 2.5rem;
   padding-left: calc(var(--safe-left) + clamp(1.15rem, 5vw, 1.5rem));
 }
 
