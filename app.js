@@ -18,6 +18,7 @@ function showView(name) {
   document.querySelectorAll(".tab").forEach(function (t) {
     t.classList.toggle("active", t.dataset.view === name);
   });
+  window.scrollTo(0, 0);
   render();
 }
 

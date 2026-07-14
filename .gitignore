@@ -7,3 +7,6 @@ previews/
 
 # Design-Handoff-Artefakt (kein App-Code)
 design_handoff_habit_tracker_redesign/
+
+# Persönliche Backup/Import-Daten (keine App-Code, nicht committen)
+habit-tracker-import.json
