@@ -82,6 +82,65 @@ function startOfWeek(key) {
   return dateKey(dt);
 }
 
+// habitsData: Array aus { entries, createdAt } — ein Eintrag für Einzelansicht, mehrere für "Alle".
+function weekdayRates(habitsData, todayK) {
+  const totals = [0, 0, 0, 0, 0, 0, 0];
+  const dones = [0, 0, 0, 0, 0, 0, 0];
+  habitsData.forEach(function (hd) {
+    let cur = hd.createdAt;
+    while (cur <= todayK) {
+      const parts = cur.split("-").map(Number);
+      const dt = new Date(parts[0], parts[1] - 1, parts[2]);
+      const dow = (dt.getDay() + 6) % 7; // Montag = 0
+      totals[dow]++;
+      if (hd.entries[cur]) { dones[dow]++; }
+      cur = addDays(cur, 1);
+    }
+  });
+  return totals.map(function (t, i) {
+    return { dow: i, rate: t === 0 ? 0 : Math.round((dones[i] / t) * 100), count: t };
+  });
+}
+
+function monthRate(habitsData, todayK, y, m) {
+  const daysInMonth = new Date(y, m + 1, 0).getDate();
+  let total = 0, done = 0;
+  for (let d = 1; d <= daysInMonth; d++) {
+    const key = y + "-" + String(m + 1).padStart(2, "0") + "-" + String(d).padStart(2, "0");
+    if (key > todayK) { continue; }
+    habitsData.forEach(function (hd) {
+      if (key < hd.createdAt) { return; }
+      total++;
+      if (hd.entries[key]) { done++; }
+    });
+  }
+  return { rate: total === 0 ? 0 : Math.round((done / total) * 100), total: total };
+}
+
+function weeklyRatesMulti(habitsData, todayK, numWeeks) {
+  if (habitsData.length === 0) { return []; }
+  let earliest = habitsData[0].createdAt;
+  habitsData.forEach(function (hd) { if (hd.createdAt < earliest) { earliest = hd.createdAt; } });
+  let ws = startOfWeek(earliest);
+  const lastWs = startOfWeek(todayK);
+  const out = [];
+  while (ws <= lastWs) {
+    let total = 0, done = 0;
+    for (let i = 0; i < 7; i++) {
+      const day = addDays(ws, i);
+      if (day > todayK) { continue; }
+      habitsData.forEach(function (hd) {
+        if (day < hd.createdAt) { return; }
+        total++;
+        if (hd.entries[day]) { done++; }
+      });
+    }
+    out.push({ weekStart: ws, rate: total === 0 ? 0 : Math.round((done / total) * 100) });
+    ws = addDays(ws, 7);
+  }
+  return numWeeks ? out.slice(-numWeeks) : out;
+}
+
 function weeklyRates(entries, createdAt, todayK) {
   let ws = startOfWeek(createdAt);
   const lastWs = startOfWeek(todayK);

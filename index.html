@@ -52,6 +52,7 @@
         <span id="cal-month"></span>
         <button id="cal-next" aria-label="Nächster Monat">›</button>
       </div>
+      <button id="cal-today" class="cal-today-btn" hidden>Zu heute springen</button>
       <div id="cal-weekdays"><span>Mo</span><span>Di</span><span>Mi</span><span>Do</span><span>Fr</span><span>Sa</span><span>So</span></div>
       <div id="heatmap"></div>
       <div class="cal-legend">
@@ -59,6 +60,17 @@
         <span class="scale"><span class="sw sw0"></span><span class="sw sw1"></span><span class="sw sw2"></span><span class="sw sw3"></span></span>
         <span class="spacer"></span>
         <span class="today"></span><span>heute</span>
+      </div>
+
+      <div class="stat-section">
+        <h2>Wochentag-Muster</h2>
+        <div id="weekday-chart" class="weekday-chart"></div>
+      </div>
+
+      <div class="stat-section">
+        <h2>Trend</h2>
+        <div class="trend-meta" id="trend-meta"></div>
+        <svg id="trend" viewBox="0 0 280 70" preserveAspectRatio="none"></svg>
       </div>
     </section>
 

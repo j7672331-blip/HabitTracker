@@ -61,6 +61,8 @@ html {
   -webkit-text-size-adjust: 100%;
   background: var(--paper);
   overscroll-behavior-y: none;
+  /* "manipulation" = pan-x pan-y pinch-zoom: killt nur Doppel-Tap-Zoom, Pinch-Zoom bleibt erlaubt. */
+  touch-action: manipulation;
 }
 
 /* Scrollbar: den breiten Standard-Balken ausblenden.
@@ -126,6 +128,12 @@ main {
 .view > *:nth-child(4) { animation-delay: 200ms; }
 .view > *:nth-child(5) { animation-delay: 250ms; }
 .view > *:nth-child(6) { animation-delay: 290ms; }
+.view > *:nth-child(7) { animation-delay: 330ms; }
+.view > *:nth-child(8) { animation-delay: 365ms; }
+.view > *:nth-child(9) { animation-delay: 400ms; }
+.view > *:nth-child(10) { animation-delay: 430ms; }
+.view > *:nth-child(11) { animation-delay: 460ms; }
+.view > *:nth-child(12) { animation-delay: 490ms; }
 @keyframes rowIn {
   from { opacity: 0; transform: translateY(8px); }
   to   { opacity: 1; transform: none; }
@@ -247,6 +255,26 @@ h2 {
 .habit-row:active { background: var(--surface-2); }
 .habit-row:active .habit-mark { transform: scale(0.92); }
 
+.today-add-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  width: 100%;
+  padding: 0.95rem 1.15rem;
+  background: none;
+  border: none;
+  border-top: 1px solid var(--line-soft);
+  font: inherit;
+  font-weight: 600;
+  font-size: 0.92rem;
+  color: var(--accent-2);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 200ms var(--ease);
+}
+.today-add-row:active { background: var(--surface-2); }
+
 .habit-dot {
   width: 10px;
   height: 10px;
@@ -275,17 +303,29 @@ h2 {
   white-space: nowrap;
 }
 
-/* Streak-Badge (Punkt 3: Serie direkt auf Heute sichtbar) */
-.habit-streak {
+/* Streak-Badge: Flamme statt nackter Zahl (Duolingo-Style, zweifarbig für Signature-Glow) */
+.habit-flame {
   flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  animation: popIn 280ms var(--spring) both;
+}
+.flame-icon {
+  width: 18px;
+  height: 21px;
+  filter: drop-shadow(0 0 5px color-mix(in srgb, var(--accent) 60%, transparent));
+}
+.flame-outer { fill: var(--accent-deep); }
+.flame-core { fill: var(--accent-2); }
+.flame-num {
   font-family: var(--display);
   font-size: 0.76rem;
   font-weight: 700;
   letter-spacing: -0.01em;
-  padding: 0.2rem 0.5rem;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--accent) 16%, transparent);
   color: var(--accent-2);
+  min-width: 12px;
+  text-align: center;
 }
 
 /* Signature: Haken füllt sich mit Akzent + weicher Glow-Puls */
@@ -528,6 +568,19 @@ h2 {
 .cal-head button:active { color: var(--accent); transform: scale(0.88); }
 .cal-head button:disabled { opacity: 0.25; cursor: default; }
 
+.cal-today-btn {
+  display: block;
+  margin: -4px auto 10px;
+  padding: 4px 10px;
+  border: none;
+  background: none;
+  color: var(--accent-2);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.cal-today-btn:active { opacity: 0.7; transform: scale(0.94); }
+
 #cal-weekdays {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
@@ -598,10 +651,75 @@ h2 {
 }
 .cal-legend .spacer { flex: 1; }
 
+.stat-section { margin-top: 1.4rem; }
+.stat-section h2 {
+  font-family: var(--display);
+  font-size: 0.9rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin: 0 0 0.6rem;
+  color: var(--ink);
+}
+
+.weekday-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  padding: 12px 10px 10px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  box-shadow: var(--lift);
+}
+.weekday-bar {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.weekday-bar .bar-track {
+  width: 100%;
+  max-width: 22px;
+  height: 64px;
+  border-radius: 6px;
+  background: var(--surface-2);
+  display: flex;
+  align-items: flex-end;
+  overflow: hidden;
+}
+.weekday-bar .bar-fill {
+  width: 100%;
+  background: var(--accent-grad);
+  border-radius: 6px;
+  transition: height 420ms var(--ease);
+}
+.weekday-bar .bar-label {
+  font-family: var(--display);
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  color: var(--muted);
+}
+.weekday-bar.is-today .bar-label { color: var(--accent-2); }
+
+.trend-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 0.4rem;
+  font-family: var(--display);
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+.trend-meta strong { color: var(--ink); font-weight: 600; }
+.trend-delta.up { color: var(--accent-2); }
+.trend-delta.down { color: #ff6b6b; }
+
 #trend {
   width: 100%;
-  height: auto;
-  margin-top: 0.5rem;
+  height: 70px;
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: 18px;

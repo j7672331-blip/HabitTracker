@@ -15,8 +15,10 @@ html, body { width: 100%; height: 100%; overflow: hidden; }
 .icon {
   position: relative;
   width: 100vw; height: 100vh;
-  background: radial-gradient(circle at 82% 18%,
-    #123f26 0%, #0d2c1b 36%, #0C0D0C 72%, #0C0D0C 100%);
+  /* Gleiche Richtung + Farbformel wie App-Hintergrund (style.css body::before):
+     color-mix(accent 34%/13%, paper) auf linear-gradient(108deg, ...). */
+  background: linear-gradient(108deg,
+    #1A5031 0%, #11261A 32%, #0C0D0C 62%, #070807 100%);
 }
 .txt {
   position: absolute;

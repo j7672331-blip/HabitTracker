@@ -30,6 +30,7 @@ function render() {
 const WEEKDAYS = ["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"];
 const MONTHS = ["Januar", "Februar", "März", "April", "Mai", "Juni",
   "Juli", "August", "September", "Oktober", "November", "Dezember"];
+const WEEKDAY_SHORT = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"]; // Montag = 0, wie weekdayRates()
 
 function renderToday() {
   const now = new Date();
@@ -47,42 +48,86 @@ function renderToday() {
     progress.textContent = "";
     progress.classList.remove("complete");
     bar.style.width = "0%";
-    list.innerHTML = '<p class="empty">Noch keine Gewohnheiten. Lege unter „Verwalten" eine an.</p>';
+    list.innerHTML = '<p class="empty">Noch keine Gewohnheiten.</p>';
+    list.appendChild(buildQuickAddRow());
     return;
   }
 
+  habits.forEach(function (h) {
+    list.appendChild(buildHabitRow(h, today));
+  });
+  list.appendChild(buildQuickAddRow());
+
+  updateTodayProgress(habits, today);
+}
+
+function buildHabitRow(h, today) {
+  const entries = state.eintraege[h.id] || {};
+  const done = !!entries[today];
+  const info = h.info || "";
+  const streak = currentStreak(entries, today);
+  const row = document.createElement("button");
+  row.dataset.id = h.id;
+  row.className = "habit-row" + (done ? " done" : "");
+  row.style.setProperty("--c", h.farbe);
+  row.innerHTML =
+    '<span class="habit-dot" style="background:' + escapeHtml(h.farbe) + '"></span>' +
+    '<span class="habit-text">' +
+      '<span class="habit-name">' + escapeHtml(h.name) + "</span>" +
+      (info ? '<span class="habit-note">' + escapeHtml(info) + "</span>" : "") +
+    "</span>" +
+    (streak > 1
+      ? '<span class="habit-flame">' +
+          '<svg class="flame-icon" viewBox="0 0 24 24" aria-hidden="true">' +
+            '<path class="flame-outer" d="M12 2.3c.4 2.6-1.1 4-2.4 5.7C8.2 9.7 7 11.5 7 13.8 7 17.8 9.8 21 13.2 21c3.7 0 6.3-2.7 6.3-6.2 0-2.4-1.1-4.2-2.3-5.6-.2 1.6-1 2.6-1.9 2.6-1 0-1.5-.8-1.3-1.9.3-1.7-.2-3.6-2-7.6z"/>' +
+            '<path class="flame-core" d="M13.4 11c.5 1.3.2 2.6-.7 3.4-1.1 1-2.7.8-3.4-.4-.6-1-.4-2.3.5-3.3.1 1 .8 1.6 1.6 1.4.7-.2 1.1-.7 1-1.1z"/>' +
+          "</svg>" +
+          '<span class="flame-num">' + streak + "</span>" +
+        "</span>"
+      : "") +
+    '<span class="habit-mark"></span>';
+  row.addEventListener("click", function () {
+    toggleEntry(state, h.id, today);
+    saveData(state);
+    updateAfterToggle(h.id, today);
+  });
+  return row;
+}
+
+// Gezieltes Update statt komplettem renderToday(): nur die getoggelte Zeile
+// wird ersetzt, der Rest der Liste (Scroll-Position, DOM-Referenzen) bleibt stehen.
+function updateAfterToggle(habitId, today) {
+  const habits = activeHabits();
+  const h = habits.find(function (x) { return x.id === habitId; });
+  const oldRow = document.querySelector('.habit-row[data-id="' + habitId + '"]');
+  if (!h || !oldRow) { renderToday(); return; }
+  oldRow.replaceWith(buildHabitRow(h, today));
+  updateTodayProgress(habits, today);
+}
+
+function updateTodayProgress(habits, today) {
+  const progress = document.getElementById("today-progress");
+  const bar = document.getElementById("today-bar");
   let doneCount = 0;
   habits.forEach(function (h) {
     const entries = state.eintraege[h.id] || {};
-    const done = !!entries[today];
-    if (done) { doneCount++; }
-    const info = h.info || "";
-    const streak = currentStreak(entries, today);
-    const row = document.createElement("button");
-    row.className = "habit-row" + (done ? " done" : "");
-    row.style.setProperty("--c", h.farbe);
-    row.innerHTML =
-      '<span class="habit-dot" style="background:' + escapeHtml(h.farbe) + '"></span>' +
-      '<span class="habit-text">' +
-        '<span class="habit-name">' + escapeHtml(h.name) + "</span>" +
-        (info ? '<span class="habit-note">' + escapeHtml(info) + "</span>" : "") +
-      "</span>" +
-      (streak > 1 ? '<span class="habit-streak">' + streak + '</span>' : "") +
-      '<span class="habit-mark"></span>';
-    row.addEventListener("click", function () {
-      toggleEntry(state, h.id, today);
-      saveData(state);
-      renderToday();
-    });
-    list.appendChild(row);
+    if (entries[today]) { doneCount++; }
   });
-
   const all = doneCount === habits.length;
   bar.style.width = Math.round((doneCount / habits.length) * 100) + "%";
   progress.classList.toggle("complete", all);
   progress.textContent = all
     ? "Für heute erledigt."
     : doneCount + " von " + habits.length + " erledigt";
+}
+
+function buildQuickAddRow() {
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "today-add-row";
+  btn.textContent = "+ Gewohnheit hinzufügen";
+  btn.addEventListener("click", function () { openAddModal(renderToday); });
+  return btn;
 }
 
 function escapeHtml(s) {
@@ -197,6 +242,60 @@ function openEditModal(habit) {
     infoInput.addEventListener("keydown", function (e) { if (e.key === "Enter") { save(); } });
     nameInput.focus();
     nameInput.select();
+  });
+}
+
+function openAddModal(onDone) {
+  openModal(function (modal, backdrop) {
+    const h3 = document.createElement("h3");
+    h3.textContent = "Neue Gewohnheit";
+    const nameRow = document.createElement("div");
+    nameRow.className = "modal-field modal-name-row";
+    const nameInput = document.createElement("input");
+    nameInput.type = "text"; nameInput.maxLength = 40;
+    nameInput.placeholder = "Name der Gewohnheit";
+    const colorInput = document.createElement("input");
+    colorInput.type = "color"; colorInput.value = "#34D17A";
+    colorInput.setAttribute("aria-label", "Farbe");
+    nameRow.appendChild(nameInput);
+    nameRow.appendChild(colorInput);
+    const errorP = document.createElement("p");
+    errorP.className = "modal-error";
+    const infoField = document.createElement("div");
+    infoField.className = "modal-field";
+    const infoInput = document.createElement("input");
+    infoInput.type = "text"; infoInput.maxLength = 60;
+    infoInput.placeholder = "Zusatzinfo (optional)";
+    infoField.appendChild(infoInput);
+    const actions = document.createElement("div");
+    actions.className = "modal-actions";
+    const cancelBtn = document.createElement("button");
+    cancelBtn.className = "modal-cancel"; cancelBtn.textContent = "Abbrechen";
+    const saveBtn = document.createElement("button");
+    saveBtn.className = "modal-confirm"; saveBtn.textContent = "Hinzufügen";
+    actions.appendChild(cancelBtn); actions.appendChild(saveBtn);
+    modal.appendChild(h3); modal.appendChild(nameRow); modal.appendChild(errorP);
+    modal.appendChild(infoField); modal.appendChild(actions);
+
+    function save() {
+      const trimmed = nameInput.value.trim();
+      if (!trimmed) { nameInput.focus(); return; }
+      if (isDuplicateName(trimmed)) {
+        errorP.textContent = 'Es gibt bereits eine Gewohnheit namens "' + trimmed + '".';
+        nameInput.focus();
+        return;
+      }
+      createHabit(state, trimmed, colorInput.value, todayKey(), infoInput.value.trim());
+      saveData(state);
+      closeModal(backdrop);
+      onDone();
+    }
+    cancelBtn.addEventListener("click", function () { closeModal(backdrop); });
+    saveBtn.addEventListener("click", save);
+    nameInput.addEventListener("input", function () { errorP.textContent = ""; });
+    nameInput.addEventListener("keydown", function (e) { if (e.key === "Enter") { save(); } });
+    infoInput.addEventListener("keydown", function (e) { if (e.key === "Enter") { save(); } });
+    nameInput.focus();
   });
 }
 
@@ -385,6 +484,9 @@ function renderStats() {
     document.getElementById("stat-current").textContent = "0";
     document.getElementById("stat-longest").textContent = "0";
     document.getElementById("stat-rate").textContent = "0%";
+    document.getElementById("weekday-chart").innerHTML = "";
+    document.getElementById("trend").innerHTML = "";
+    document.getElementById("trend-meta").innerHTML = "";
     return;
   }
   if (activeHabitId !== "all" && !habits.some(function (h) { return h.id === activeHabitId; })) {
@@ -426,6 +528,11 @@ function renderStats() {
     }
     document.getElementById("stat-longest").textContent = perfect;
 
+    const habitsDataAll = habits.map(function (h) {
+      return { entries: state.eintraege[h.id] || {}, createdAt: h.erstelltAm };
+    });
+    renderWeekdayChart(habitsDataAll, today);
+    renderTrend(habitsDataAll, today);
     renderCalendarCombined(habits, today);
     return;
   }
@@ -437,7 +544,76 @@ function renderStats() {
   document.getElementById("stat-longest").textContent = longestStreak(entries);
   document.getElementById("stat-rate").textContent =
     successRate(entries, habit.erstelltAm, today, range) + "%";
+  renderWeekdayChart([{ entries: entries, createdAt: habit.erstelltAm }], today);
+  renderTrend([{ entries: entries, createdAt: habit.erstelltAm }], today);
   renderCalendar(habit, entries, today);
+}
+
+function renderWeekdayChart(habitsData, todayK) {
+  const box = document.getElementById("weekday-chart");
+  box.innerHTML = "";
+  const rates = weekdayRates(habitsData, todayK);
+  const todayDow = (new Date().getDay() + 6) % 7;
+  rates.forEach(function (r) {
+    const col = document.createElement("div");
+    col.className = "weekday-bar" + (r.dow === todayDow ? " is-today" : "");
+    col.title = WEEKDAY_SHORT[r.dow] + ": " + (r.count === 0 ? "keine Daten" : r.rate + "%");
+    const track = document.createElement("div");
+    track.className = "bar-track";
+    const fill = document.createElement("div");
+    fill.className = "bar-fill";
+    fill.style.height = "0%";
+    track.appendChild(fill);
+    requestAnimationFrame(function () {
+      fill.style.height = (r.count === 0 ? 0 : r.rate) + "%";
+    });
+    const label = document.createElement("span");
+    label.className = "bar-label";
+    label.textContent = WEEKDAY_SHORT[r.dow];
+    col.appendChild(track);
+    col.appendChild(label);
+    box.appendChild(col);
+  });
+}
+
+function renderTrend(habitsData, todayK) {
+  const svg = document.getElementById("trend");
+  const meta = document.getElementById("trend-meta");
+  const weeks = weeklyRatesMulti(habitsData, todayK, 8);
+
+  if (weeks.length < 2) {
+    svg.innerHTML = "";
+    meta.textContent = "Noch nicht genug Daten für einen Trend.";
+    return;
+  }
+
+  const w = 280, h = 70, pad = 6;
+  const stepX = (w - pad * 2) / (weeks.length - 1);
+  const points = weeks.map(function (wk, i) {
+    const x = pad + i * stepX;
+    const y = h - pad - ((h - pad * 2) * wk.rate) / 100;
+    return x + "," + y;
+  });
+  svg.innerHTML =
+    '<polyline points="' + points.join(" ") +
+    '" fill="none" stroke="var(--accent-2)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>' +
+    points.map(function (p) {
+      const xy = p.split(",");
+      return '<circle cx="' + xy[0] + '" cy="' + xy[1] + '" r="2.4" fill="var(--accent-2)"/>';
+    }).join("");
+
+  const now = new Date();
+  const thisMonth = monthRate(habitsData, todayK, now.getFullYear(), now.getMonth());
+  const prev = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const prevMonth = monthRate(habitsData, todayK, prev.getFullYear(), prev.getMonth());
+
+  meta.innerHTML = "<span>Dieser Monat: <strong>" + thisMonth.rate + "%</strong></span>";
+  if (prevMonth.total > 0) {
+    const delta = thisMonth.rate - prevMonth.rate;
+    const cls = delta > 0 ? "up" : (delta < 0 ? "down" : "");
+    const sign = delta > 0 ? "+" : "";
+    meta.innerHTML += '<span class="trend-delta ' + cls + '">' + sign + delta + "% vs. Vormonat</span>";
+  }
 }
 
 function setStatLabels(a, b, c) {
@@ -468,8 +644,9 @@ function monthGridScaffold(today, dayFn) {
   if (!statsMonth) { statsMonth = { y: now.getFullYear(), m: now.getMonth() }; }
   const y = statsMonth.y, m = statsMonth.m;
   document.getElementById("cal-month").textContent = MONTHS[m] + " " + y;
-  document.getElementById("cal-next").disabled =
-    (y === now.getFullYear() && m === now.getMonth());
+  const isCurrentMonth = (y === now.getFullYear() && m === now.getMonth());
+  document.getElementById("cal-next").disabled = isCurrentMonth;
+  document.getElementById("cal-today").hidden = isCurrentMonth;
 
   const grid = document.getElementById("heatmap");
   grid.innerHTML = "";
@@ -595,6 +772,12 @@ document.getElementById("cal-next").addEventListener("click", function () {
   if (statsMonth.y === now.getFullYear() && statsMonth.m === now.getMonth()) { return; }
   statsMonth.m++;
   if (statsMonth.m > 11) { statsMonth.m = 0; statsMonth.y++; }
+  renderStats();
+});
+
+document.getElementById("cal-today").addEventListener("click", function () {
+  const now = new Date();
+  statsMonth = { y: now.getFullYear(), m: now.getMonth() };
   renderStats();
 });
 
