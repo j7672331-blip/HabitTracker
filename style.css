@@ -61,8 +61,8 @@ html {
   -webkit-text-size-adjust: 100%;
   background: var(--paper);
   overscroll-behavior-y: none;
-  /* "manipulation" = pan-x pan-y pinch-zoom: killt nur Doppel-Tap-Zoom, Pinch-Zoom bleibt erlaubt. */
-  touch-action: manipulation;
+  /* pan-x pan-y ohne pinch-zoom: killt Doppel-Tap-Zoom UND Pinch-Zoom, Scrollen bleibt erlaubt. */
+  touch-action: pan-x pan-y;
 }
 
 /* Scrollbar: den breiten Standard-Balken ausblenden.
@@ -568,18 +568,20 @@ h2 {
 .cal-head button:active { color: var(--accent); transform: scale(0.88); }
 .cal-head button:disabled { opacity: 0.25; cursor: default; }
 
-.cal-today-btn {
-  display: block;
-  margin: -4px auto 10px;
-  padding: 4px 10px;
+.cal-legend-today {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
   border: none;
   background: none;
-  color: var(--accent-2);
-  font-size: 0.78rem;
-  font-weight: 600;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  color: inherit;
   cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
 }
-.cal-today-btn:active { opacity: 0.7; transform: scale(0.94); }
+.cal-legend-today:active { opacity: 0.55; }
 
 #cal-weekdays {
   display: grid;
@@ -1020,9 +1022,10 @@ h2 {
   inset: 0;
   z-index: 200;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
-  padding: 1.25rem;
+  /* Nah oben statt zentriert: bleibt so meist über der iOS-Tastatur sichtbar. */
+  padding: 7vh 1.25rem 1.25rem;
   background: rgba(4, 5, 4, 0.62);
   -webkit-backdrop-filter: blur(6px);
   backdrop-filter: blur(6px);

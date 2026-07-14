@@ -646,7 +646,6 @@ function monthGridScaffold(today, dayFn) {
   document.getElementById("cal-month").textContent = MONTHS[m] + " " + y;
   const isCurrentMonth = (y === now.getFullYear() && m === now.getMonth());
   document.getElementById("cal-next").disabled = isCurrentMonth;
-  document.getElementById("cal-today").hidden = isCurrentMonth;
 
   const grid = document.getElementById("heatmap");
   grid.innerHTML = "";
