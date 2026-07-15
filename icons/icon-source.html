@@ -22,7 +22,10 @@ html, body { width: 100%; height: 100%; overflow: hidden; }
 }
 .txt {
   position: absolute;
-  top: 50%; left: 50%;
+  /* Reine top:50%/left:50%-Zentrierung sitzt wegen Canvas/CSS-Baseline-Metriken bei
+     Versalien ohne Unterlängen (kein g/j/y) systematisch zu hoch + leicht zu weit
+     rechts (pixelgenau gemessen: 512px-Referenz ~12.5px hoch, ~7.5px rechts). Korrigiert. */
+  top: calc(50% + 2.44vmin); left: calc(50% - 1.46vmin);
   font-family: 'Unbounded', sans-serif;
   font-weight: 800;
   font-size: 31.25vmin;
