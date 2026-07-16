@@ -63,6 +63,17 @@ html {
   overscroll-behavior-y: none;
   /* pan-x pan-y ohne pinch-zoom: killt Doppel-Tap-Zoom UND Pinch-Zoom, Scrollen bleibt erlaubt. */
   touch-action: pan-x pan-y;
+  /* Keine Text-Markierung/Blau-Highlight per Finger, kein Copy/Lupen-Callout-Menue -
+     App fuehlt sich sonst wie eine Webseite statt wie eine native App an. */
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+input, textarea {
+  -webkit-user-select: text;
+  user-select: text;
+  -webkit-touch-callout: default;
 }
 
 /* Scrollbar: den breiten Standard-Balken ausblenden.
