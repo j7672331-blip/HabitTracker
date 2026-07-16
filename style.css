@@ -229,7 +229,7 @@ h2 {
 }
 
 /* ---------- Heute / Verwalten: weiche erhöhte Karten ---------- */
-#today-list, #manage-list {
+#today-list, #manage-list, .day-entry-list {
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: 20px;
@@ -1044,6 +1044,7 @@ h2 {
   line-height: 1.5;
   color: var(--ink-soft);
 }
+.day-entry-list { margin-bottom: 1.3rem; max-height: 50vh; overflow-y: auto; }
 .modal-field { margin-bottom: 0.7rem; }
 .modal-field:last-of-type { margin-bottom: 1.3rem; }
 .modal-name-row { display: flex; gap: 0.5rem; align-items: center; }

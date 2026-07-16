@@ -1,5 +1,16 @@
 "use strict";
 
+// iOS fuehrt bei schnell aufeinanderfolgenden Taps trotz touch-action/
+// maximum-scale weiterhin seine Doppel-Tap-Zoom-Geste aus (kurzer Scroll-
+// Ruckler zum getippten Element). preventDefault auf dem zweiten touchend
+// unterbindet genau das, ohne normale Einzel-Taps zu beeintraechtigen.
+let lastTouchEnd = 0;
+document.addEventListener("touchend", function (e) {
+  const now = Date.now();
+  if (now - lastTouchEnd <= 300) { e.preventDefault(); }
+  lastTouchEnd = now;
+}, { passive: false });
+
 let state = loadData();
 let currentView = "today";
 let activeHabitId = null;
@@ -644,6 +655,7 @@ function renderCalendar(habit, entries, today) {
 }
 
 function renderCalendarCombined(habits, today) {
+  const yesterday = addDays(today, -1);
   monthGridScaffold(today, function (cell, key, future) {
     if (key === today) { cell.classList.add("is-today"); }
     if (future) { return; }
@@ -661,6 +673,59 @@ function renderCalendarCombined(habits, today) {
       cell.classList.add("frac-" + level);
       if (level >= 2) { cell.style.color = "#04130a"; }
     }
+    if (key === yesterday) {
+      cell.classList.add("tappable");
+      cell.addEventListener("click", function () { openDayEntryModal(key); });
+    }
+  });
+}
+
+function buildDayEntryRow(h, key) {
+  const entries = state.eintraege[h.id] || {};
+  const done = !!entries[key];
+  const row = document.createElement("button");
+  row.type = "button";
+  row.className = "habit-row" + (done ? " done" : "");
+  row.style.setProperty("--c", h.farbe);
+  row.innerHTML =
+    '<span class="habit-dot" style="background:' + escapeHtml(h.farbe) + '"></span>' +
+    '<span class="habit-text"><span class="habit-name">' + escapeHtml(h.name) + "</span></span>" +
+    '<span class="habit-mark"></span>';
+  row.addEventListener("click", function () {
+    toggleEntry(state, h.id, key);
+    saveData(state);
+    row.classList.toggle("done", !!(state.eintraege[h.id] || {})[key]);
+    renderStats();
+  });
+  return row;
+}
+
+function openDayEntryModal(key) {
+  const habits = activeHabits().filter(function (h) { return h.erstelltAm <= key; });
+  openModal(function (modal, backdrop) {
+    const h3 = document.createElement("h3");
+    h3.textContent = "Nachtrag für " + keyToLabel(key);
+    const list = document.createElement("div");
+    list.className = "day-entry-list";
+    if (habits.length === 0) {
+      const p = document.createElement("p");
+      p.className = "empty";
+      p.textContent = "Keine Gewohnheiten an diesem Tag.";
+      list.appendChild(p);
+    } else {
+      habits.forEach(function (h) { list.appendChild(buildDayEntryRow(h, key)); });
+    }
+    const actions = document.createElement("div");
+    actions.className = "modal-actions";
+    const doneBtn = document.createElement("button");
+    doneBtn.type = "button";
+    doneBtn.className = "modal-confirm";
+    doneBtn.textContent = "Fertig";
+    doneBtn.addEventListener("click", function () { closeModal(backdrop); });
+    actions.appendChild(doneBtn);
+    modal.appendChild(h3);
+    modal.appendChild(list);
+    modal.appendChild(actions);
   });
 }
 
