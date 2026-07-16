@@ -265,6 +265,22 @@ Feedback-Runden, alle deployed + MD5-verifiziert, alle vom User bestätigt.
 `git add -A`) → Push → Poll-Loop (`until`-Schleife mit `?nocache=$(date +%s)`,
 kein blindes `sleep`, GateGuard/Sandbox blockt Standalone-Sleeps) gegen GH-Pages-MD5.
 
+**Fehlgeschlagen — Statusleiste einfärben (NICHT nochmal versuchen):** Ziel war,
+die schwarze iOS-Statusleiste (Homescreen-App) an den Gradient anzugleichen statt
+hartem Schwarz. Zwei Ansätze probiert, beide verworfen, zurück auf Original-Zustand:
+1. `theme-color`-Meta-Tag ändern → **kein Effekt** (bestätigt: `black-translucent`
+   überstimmt `theme-color` komplett für die native Statusleiste bei installierten
+   Homescreen-Apps).
+2. `body { background-color: #1a5031 }` + `body::before` z-index von `-1` auf `0`
+   angehoben (iOS liest laut Recherche tatsächlich body's `background-color` für die
+   Statusleisten-Tönung) → Statusleiste wurde zwar grün statt schwarz, aber der ganze
+   sichtbare Gradient-Hintergrund sah dabei laut User "richtig schlecht" aus (vermutlich
+   iOS-natives Compositing-Verhalten bei `black-translucent`+body-background-color,
+   das sich im Chromium-Sandbox-Test NICHT reproduzieren lässt — lokale Tests dieser
+   Art sind für dieses Problem grundsätzlich nicht aussagekräftig).
+   User-Entscheidung: **lieber Schwarz als schlecht aussehendes Grün.** Thema erledigt,
+   nicht wieder aufgreifen ohne komplett neuen Ansatz.
+
 **GateGuard-Hook (Sandbox, session-übergreifend relevant):** blockt in dieser
 Umgebung immer den ersten Edit/Write/Bash-Call pro Datei/Session mit einem
 Fact-Forcing-Error. Kein echter Fehler — kurze Fakten posten (Importeure/Grep-Treffer,
