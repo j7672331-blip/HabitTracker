@@ -83,11 +83,6 @@ html { scrollbar-width: none; -ms-overflow-style: none; }
 
 body {
   margin: 0;
-  /* iOS liest fuer apple-mobile-web-app-status-bar-style=black-translucent
-     genau diese background-color (echte Property, nicht Pseudo-Element/html)
-     als Toenung fuer die Statusleiste - ohne das faerbt sie schwarz statt
-     zum Gradient passend. Nur ein flacher Farbwert moeglich (kein Verlauf). */
-  background-color: #1a5031;
   min-height: 100dvh;
   font-family: var(--sans);
   color: var(--ink);
