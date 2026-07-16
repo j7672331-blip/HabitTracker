@@ -605,6 +605,11 @@ function monthGridScaffold(today, dayFn) {
   }
 }
 
+function keyToLabel(key) {
+  const p = key.split("-").map(Number);
+  return p[2] + ". " + MONTHS[p[1] - 1];
+}
+
 function renderCalendar(habit, entries, today) {
   const yesterday = addDays(today, -1);
   monthGridScaffold(today, function (cell, key) {
@@ -613,12 +618,26 @@ function renderCalendar(habit, entries, today) {
       cell.style.background = habit.farbe;
       cell.style.color = "#04130a";
     }
-    if (key === today || key === yesterday) {
+    if (key === today) {
       cell.classList.add("tappable");
       cell.addEventListener("click", function () {
         toggleEntry(state, habit.id, key);
         saveData(state);
         renderStats();
+      });
+    } else if (key === yesterday) {
+      cell.classList.add("tappable");
+      cell.addEventListener("click", function () {
+        const verb = entries[key] ? "als nicht erledigt markieren" : "als erledigt markieren";
+        openConfirmModal(
+          '"' + habit.name + '" für ' + keyToLabel(key) + " nachträglich " + verb + "?",
+          function () {
+            toggleEntry(state, habit.id, key);
+            saveData(state);
+            renderStats();
+          },
+          { confirmLabel: "Eintragen" }
+        );
       });
     }
   });
