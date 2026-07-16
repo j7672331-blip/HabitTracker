@@ -701,7 +701,9 @@ function buildDayEntryRow(h, key) {
 }
 
 function openDayEntryModal(key) {
-  const habits = activeHabits().filter(function (h) { return h.erstelltAm <= key; });
+  // Kein erstelltAm-Filter, konsistent zum Einzel-Gewohnheit-Kalender: der
+  // toggelt den Vortag ebenfalls unabhaengig vom Erstellungsdatum der Habit.
+  const habits = activeHabits();
   openModal(function (modal, backdrop) {
     const h3 = document.createElement("h3");
     h3.textContent = "Nachtrag für " + keyToLabel(key);
