@@ -605,10 +605,11 @@ h2 {
 .cell.frac-1 { background: color-mix(in srgb, var(--accent) 24%, var(--surface)); }
 .cell.frac-2 { background: color-mix(in srgb, var(--accent) 58%, var(--surface)); }
 .cell.frac-3 { background: var(--accent); }
-/* heute / gestern (editierbar) → Akzent-Ring */
-.cell.tappable, .cell.is-today { box-shadow: inset 0 0 0 1.6px var(--accent); border-color: transparent; }
+/* nur heute → Akzent-Ring. Gestern (auch tappable) sieht aus wie jeder andere Tag,
+   nur der Cursor/Tap-Scale zeigt die Tippbarkeit. */
+.cell.is-today { box-shadow: inset 0 0 0 1.6px var(--accent); border-color: transparent; }
 .cell.tappable { cursor: pointer; }
-.cell.tappable.done { box-shadow: inset 0 0 0 1.6px var(--accent), 0 4px 12px -6px color-mix(in srgb, var(--accent) 55%, transparent); }
+.cell.is-today.done { box-shadow: inset 0 0 0 1.6px var(--accent), 0 4px 12px -6px color-mix(in srgb, var(--accent) 55%, transparent); }
 .cell.is-today.frac-1, .cell.is-today.frac-2, .cell.is-today.frac-3 { box-shadow: inset 0 0 0 1.6px var(--accent), 0 4px 12px -6px color-mix(in srgb, var(--accent) 55%, transparent); }
 .cell.tappable:active { transform: scale(0.9); }
 

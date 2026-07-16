@@ -630,7 +630,7 @@ function renderCalendar(habit, entries, today) {
       cell.style.color = "#04130a";
     }
     if (key === today) {
-      cell.classList.add("tappable");
+      cell.classList.add("tappable", "is-today");
       cell.addEventListener("click", function () {
         toggleEntry(state, habit.id, key);
         saveData(state);
