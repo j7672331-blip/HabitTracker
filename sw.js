@@ -1,5 +1,5 @@
 "use strict";
-const CACHE = "habit-tracker-v38";
+const CACHE = "habit-tracker-v39";
 const ASSETS = [
   "./index.html",
   "./style.css",
@@ -29,10 +29,13 @@ self.addEventListener("activate", function (e) {
 
 // Network-first: online immer frische Inhalte (Name/Updates zeigen sofort),
 // offline Fallback auf den Cache. Erfolgreiche GET-Antworten werden nachgecacht.
+// cache:"no-store" ist noetig, weil fetch() sonst den normalen HTTP-Disk-Cache
+// des Browsers respektiert (nicht nur den SW-eigenen Cache) - Aenderungen kamen
+// sonst teils erst nach mehreren Reloads an.
 self.addEventListener("fetch", function (e) {
   if (e.request.method !== "GET") { return; }
   e.respondWith(
-    fetch(e.request).then(function (res) {
+    fetch(e.request, { cache: "no-store" }).then(function (res) {
       if (res && res.ok) {
         const copy = res.clone();
         caches.open(CACHE).then(function (c) { c.put(e.request, copy); });
