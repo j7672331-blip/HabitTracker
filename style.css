@@ -83,12 +83,6 @@ html { scrollbar-width: none; -ms-overflow-style: none; }
 
 body {
   margin: 0;
-  /* iOS liest bei apple-mobile-web-app-status-bar-style=black-translucent
-     genau diese background-color fuer die Statusleisten-Toenung (nur
-     Flachfarbe moeglich). z-index von body::before (0 statt -1) sorgt
-     dafuer, dass der Gradient trotzdem sichtbar DARUEBER liegt statt
-     dass diese Flaeche den Verlauf zudeckt. */
-  background-color: #1a5031;
   min-height: 100dvh;
   font-family: var(--sans);
   color: var(--ink);
@@ -108,7 +102,7 @@ body::before {
   content: "";
   position: fixed;
   inset: 0;
-  z-index: 0;
+  z-index: -1;
   background:
     linear-gradient(108deg,
       color-mix(in srgb, var(--accent) 34%, var(--paper)) 0%,
