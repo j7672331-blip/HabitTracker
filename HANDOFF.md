@@ -46,7 +46,7 @@ Zielgerät: iPhone (Safe-Areas/Dynamic Island berücksichtigt), aber responsiv.
     Wochentag-Muster, Trend/Monatsvergleich); keine DOM/Storage
   - `storage.js` – einzige Schnittstelle zu `localStorage` + Mutationen + Export/Import
   - `app.js` – UI-Logik, verdrahtet alles
-  - `sw.js` – Service Worker (Offline-Cache; Cache-Name aktuell **`habit-tracker-v40`**;
+  - `sw.js` – Service Worker (Offline-Cache; Cache-Name aktuell **`habit-tracker-v46`**;
     `fetch()` nutzt `{cache:"no-store"}` gegen den Browser-HTTP-Disk-Cache, siehe Abschnitt 6b)
   - `manifest.json` – PWA-Metadaten
   - `icons/` – `icon-192.png`/`icon-512.png` (generiert aus `icon-source.html`, manuell
@@ -281,6 +281,15 @@ hartem Schwarz. Zwei Ansätze probiert, beide verworfen, zurück auf Original-Zu
    User-Entscheidung: **lieber Schwarz als schlecht aussehendes Grün.** Thema erledigt,
    nicht wieder aufgreifen ohne komplett neuen Ansatz.
 
+**Nachtrag-Modal-Bugfix (Alle-Kalender):** Nach dem 13-Habit-Reimport (alle mit
+`erstelltAm` = Import-Tag) zeigte das Nachtrag-Modal für den Vortag "keine
+Gewohnheiten für diesen Tag", weil `openDayEntryModal()` nach `h.erstelltAm <= key`
+filterte — der Einzel-Gewohnheit-Kalender prüft das gar nicht erst (kann Vortag immer
+togglen), daher der Unterschied im User-erlebten Verhalten. Filter entfernt, beide
+Kalender verhalten sich jetzt konsistent (kein Erstellungsdatum-Gate beim Vortag).
+**Lehre:** bei neuen Feature-Filtern gegen bestehende Habits mitdenken, ob andere
+Stellen im Code dieselbe Einschränkung (bewusst oder unbewusst) NICHT haben.
+
 **GateGuard-Hook (Sandbox, session-übergreifend relevant):** blockt in dieser
 Umgebung immer den ersten Edit/Write/Bash-Call pro Datei/Session mit einem
 Fact-Forcing-Error. Kein echter Fehler — kurze Fakten posten (Importeure/Grep-Treffer,
@@ -323,10 +332,13 @@ denselben Tool-Call 1:1 wiederholen, geht dann durch.
 
 ## 9. Git-Stand
 
-- Branch: `master`. Letzter Commit: `97defb5` ("Text-Markierung (blaues iOS-Highlight)
-  app-weit deaktiviert"). Commits dieser Session (chronologisch nach `ecd4593`):
+- Branch: `master`. Letzter Commit: `fe75c35` ("Nachtrag-Modal (Alle-Kalender):
+  erstelltAm-Filter entfernt"). Commits dieser Session (chronologisch nach `ecd4593`):
   Zoom/Querformat/Vortag-Popup → Doppel-Tap-Fix + "Alle"-Kalender-Popup →
-  Ring-Fix → SW `no-store`-Fix → Text-Markierung aus.
+  Ring-Fix → SW `no-store`-Fix → Text-Markierung aus → HANDOFF-Update →
+  theme-color-Versuch → Revert → zweiter Statusleisten-Versuch (body-background-color
+  + z-index) → Revert (User: Grün sah schlecht aus, lieber Schwarz) → HANDOFF-Update →
+  Nachtrag-Modal erstelltAm-Filter-Fix. Cache-Stand: `habit-tracker-v46`.
 - Live-Deploy verifiziert identisch zu `master` (MD5-Check nach jedem Push, inkl.
   `?nocache=`-Cache-Busting im curl selbst, siehe Abschnitt 6b Punkt 5 für die
   Client-seitige Cache-Falle die trotzdem auftrat).
